@@ -1,0 +1,13 @@
+﻿{
+  "Name": "BlueberryMushroomMachine",
+  "Author": "blueberry",
+  "Version": "1.0.0",
+  "Description": "Mushroom propagation machine for the Farmhouse cellar.",
+  "UniqueID": "blueberry.BlueberryMushroomMachine",
+  "EntryDll": "BlueberryMushroomMachine.dll",
+  "MinimumApiVersion": "2.11",
+  "Dependencies": [
+    { "UniqueID": "Platonymous.Toolkit" }
+  ],
+  "UpdateKeys": [ "Nexus:" ]
+}

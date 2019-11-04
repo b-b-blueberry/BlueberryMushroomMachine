@@ -1,0 +1,6 @@
+﻿{
+    "machine.name": "Propagator",
+    "machine.desc": "Inoculate with a mushroom to gradually grow more.",
+    "error.location": "Mushrooms won't grow here.",
+    "error.truffle": "Truffles won't grow this way."
+}
