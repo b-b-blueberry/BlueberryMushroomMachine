@@ -11,6 +11,7 @@ namespace BlueberryMushroomMachine
 		public bool WorksInFarmHouse { get; set; } = true;
 		public bool WorksInGreenhouse { get; set; } = false;
 		public bool WorksOutdoors { get; set; } = false;
+		public bool DisabledForFruitCave { get; set; } = true;
 
 		public bool Debugging { get; set; } = true;
 		public SButton GivePropagatorKey { get; set; } = SButton.J;

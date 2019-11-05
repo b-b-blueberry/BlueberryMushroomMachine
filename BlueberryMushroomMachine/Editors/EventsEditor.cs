@@ -13,23 +13,33 @@ namespace BlueberryMushroomMachine.Editors
 
 		public void Edit<T>(IAssetData asset)
 		{
-			IDictionary<string, string> data = null, json = null;
-			
+			var data = asset.AsDictionary<string, string>().Data;
+			var json = PropagatorMod.mHelper.Content
+				.Load<IDictionary<string, string>>
+				(PropagatorData.mEventsPath);
+
 			if (asset.AssetNameEquals("Data\\Events\\Farm"))
 			{
-				// Event 0001: Farm, Demetrius
-				// Receive Propagator recipe upon house upgrade level 3
-				if (Game1.player.HouseUpgradeLevel >= 3)
+				foreach (var kv in json)
 				{
-					data = asset.AsDictionary<string, string>().Data;
-					json = PropagatorMod.mHelper.Content.Load<IDictionary<string, string> >
-						(PropagatorData.mEventsPath);
-					json[PropagatorData.mEvent0001] =
-						string.Format(json[PropagatorData.mEvent0001],
-							PropagatorMod.i18n.Get("event.0001.0000"),
-							PropagatorMod.i18n.Get("event.0001.0001"),
-							PropagatorMod.i18n.Get("event.0001.0002"),
-							PropagatorMod.i18n.Get("event.0001.0003"));
+					if (kv.Key.StartsWith("46370001"))
+					{
+						// Event 0001: Farm, Demetrius
+						// Receive Propagator recipe upon house upgrade level 3
+						// and player did not choose the Fruit Cave.
+						if (Game1.player.HouseUpgradeLevel >= 3)
+						{
+							if (PropagatorMod.mConfig.DisabledForFruitCave
+								&& Game1.player.caveChoice.Value != 2)
+								return;
+
+							json[kv.Key] = string.Format(json[kv.Key],
+								PropagatorMod.i18n.Get("event.0001.0000"),
+								PropagatorMod.i18n.Get("event.0001.0001"),
+								PropagatorMod.i18n.Get("event.0001.0002"),
+								PropagatorMod.i18n.Get("event.0001.0003"));
+						}
+					}
 				}
 			}
 

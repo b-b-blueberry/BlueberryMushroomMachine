@@ -23,10 +23,7 @@ namespace BlueberryMushroomMachine
 			+ "/true/true/0";
 		internal static string mCraftingRecipeData =
 			"388 20 709 1/Home/{0}/true/null";
-
-		internal const string mEvent0001 =
-			"46370001/t 600 1200/H";
-
+		
 		internal static Dictionary<int, int> mMushroomSourceRects =
 			new Dictionary<int, int> {
 				{257, 0},		// Morel
