@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using StardewModdingAPI;
 
-namespace BlueberryMushroomMachine
+namespace BlueberryMushroomMachine.Editors
 {
 	class BigCraftablesTilesheetEditor : IAssetEditor
 	{

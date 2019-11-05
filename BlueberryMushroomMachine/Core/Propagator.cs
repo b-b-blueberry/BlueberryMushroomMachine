@@ -12,12 +12,6 @@ using StardewModdingAPI;
 
 using PyTK.CustomElementHandler;
 
-/** TODO:
- *		event with demetrius upon house upgrade 3 and event not yet seen
- *				If you are making events, use the last four digits of your Nexus ID plus 4 more numbers for event IDs.
- *				So 40770001, 40770002, etc
- **/
-
 namespace BlueberryMushroomMachine
 {
 	public class Propagator : Cask, ISaveElement

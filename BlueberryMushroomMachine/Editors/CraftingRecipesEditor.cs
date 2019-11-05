@@ -2,7 +2,7 @@
 
 using StardewModdingAPI;
 
-namespace BlueberryMushroomMachine
+namespace BlueberryMushroomMachine.Editors
 {
 	class CraftingRecipesEditor : IAssetEditor
 	{

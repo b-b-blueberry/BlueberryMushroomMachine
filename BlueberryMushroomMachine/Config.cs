@@ -13,6 +13,6 @@ namespace BlueberryMushroomMachine
 		public bool WorksOutdoors { get; set; } = false;
 
 		public bool Debugging { get; set; } = true;
-		public SButton GivePropagator { get; set; } = SButton.J;
+		public SButton GivePropagatorKey { get; set; } = SButton.J;
 	}
 }

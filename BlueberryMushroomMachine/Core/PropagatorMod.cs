@@ -5,12 +5,12 @@ using Microsoft.Xna.Framework.Input;
 
 using StardewValley;
 using StardewValley.Locations;
+using StardewValley.Menus;
 
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 
 using Harmony;  // el diavolo
-using StardewValley.Menus;
 
 namespace BlueberryMushroomMachine
 {
@@ -35,8 +35,9 @@ namespace BlueberryMushroomMachine
 				helper.Events.Input.ButtonPressed += OnButtonPressed;
 			}
 
+
 			// Inject sprite into the Craftables tilesheet, then use this to index object metadata.
-			mHelper.Content.AssetEditors.Add(new BigCraftablesTilesheetEditor());
+			mHelper.Content.AssetEditors.Add(new Editors.BigCraftablesTilesheetEditor());
 			mHelper.Events.GameLoop.GameLaunched += OnGameLaunched;
 			
 			// Instantiate Harmony.
@@ -46,9 +47,12 @@ namespace BlueberryMushroomMachine
 		
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
 		{
+			// Inject custom events.
+			mHelper.Content.AssetEditors.Add(new Editors.EventsEditor());
+
 			// Edit later all assets that rely on a generated object index.
-			mHelper.Content.AssetEditors.Add(new BigCraftablesInfoEditor());
-			mHelper.Content.AssetEditors.Add(new CraftingRecipesEditor());
+			mHelper.Content.AssetEditors.Add(new Editors.BigCraftablesInfoEditor());
+			mHelper.Content.AssetEditors.Add(new Editors.CraftingRecipesEditor());
 		}
 
 		private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
@@ -56,7 +60,7 @@ namespace BlueberryMushroomMachine
 			e.Button.TryGetKeyboard(out Keys keyPressed);
 
 			// Debug functionalities.
-			if (keyPressed.ToSButton().Equals(mConfig.GivePropagator))
+			if (keyPressed.ToSButton().Equals(mConfig.GivePropagatorKey))
 			{
 				mMonitor.Log("Cheated in a Propagator.", LogLevel.Trace);
 
