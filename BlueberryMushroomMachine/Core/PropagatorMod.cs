@@ -4,7 +4,6 @@ using System.Reflection;
 using Microsoft.Xna.Framework.Input;
 
 using StardewValley;
-using StardewValley.Locations;
 using StardewValley.Menus;
 
 using StardewModdingAPI;
@@ -16,31 +15,33 @@ namespace BlueberryMushroomMachine
 {
 	public class PropagatorMod : Mod
 	{
-		internal static Config mConfig;
-		internal static IModHelper mHelper;
-		internal static IMonitor mMonitor;
-		internal static ITranslationHelper i18n => mHelper.Translation;
+		internal static Config Config;
+		internal static new IModHelper Helper;
+		internal static new IMonitor Monitor;
+		internal static ITranslationHelper i18n => Helper.Translation;
 
 		public override void Entry(IModHelper helper)
 		{
 			// Internals.
-			mHelper = helper;
-			mMonitor = Monitor;
-			mConfig = helper.ReadConfig<Config>();
+			Helper = helper;
+			Monitor = base.Monitor;
+			Config = helper.ReadConfig<Config>();
 
 			// Debug events.
-			if (mConfig.Debugging)
+			if (Config.Debugging)
 			{
 				// Debug shortcut hotkeys.
 				helper.Events.Input.ButtonPressed += OnButtonPressed;
 			}
 
+			// Setup dialogue addition checks.
+			Helper.Events.GameLoop.DayStarted += OnDayStarted;
 
 			// Inject sprite into the Craftables tilesheet, then use this to index object metadata.
-			mHelper.Content.AssetEditors.Add(new Editors.BigCraftablesTilesheetEditor());
-			mHelper.Events.GameLoop.GameLaunched += OnGameLaunched;
+			Helper.Content.AssetEditors.Add(new Editors.BigCraftablesTilesheetEditor());
+			Helper.Events.GameLoop.GameLaunched += OnGameLaunched;
 			
-			// Instantiate Harmony.
+			// Harmony setup.
 			var harmony = HarmonyInstance.Create("blueberry.BlueberryMushroomMachine");
 			harmony.PatchAll(Assembly.GetExecutingAssembly());
 		}
@@ -48,11 +49,18 @@ namespace BlueberryMushroomMachine
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
 		{
 			// Inject custom events.
-			mHelper.Content.AssetEditors.Add(new Editors.EventsEditor());
+			Helper.Content.AssetEditors.Add(new Editors.EventsEditor());
 
 			// Edit later all assets that rely on a generated object index.
-			mHelper.Content.AssetEditors.Add(new Editors.BigCraftablesInfoEditor());
-			mHelper.Content.AssetEditors.Add(new Editors.CraftingRecipesEditor());
+			Helper.Content.AssetEditors.Add(new Editors.BigCraftablesInfoEditor());
+			Helper.Content.AssetEditors.Add(new Editors.CraftingRecipesEditor());
+		}
+
+		private void OnDayStarted(object sender, DayStartedEventArgs e)
+		{
+			if (Game1.player.daysUntilHouseUpgrade.Value == 2 && Game1.player.HouseUpgradeLevel == 2)
+				// Add Robin's pre-Demetrius-event dialogue.
+				Game1.player.activeDialogueEvents.Add("event.4637.0000.0000", 7);
 		}
 
 		private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
@@ -60,9 +68,9 @@ namespace BlueberryMushroomMachine
 			e.Button.TryGetKeyboard(out Keys keyPressed);
 
 			// Debug functionalities.
-			if (keyPressed.ToSButton().Equals(mConfig.GivePropagatorKey))
+			if (keyPressed.ToSButton().Equals(Config.GivePropagatorKey))
 			{
-				mMonitor.Log("Cheated in a Propagator.", LogLevel.Trace);
+				Monitor.Log(Game1.player.Name + " cheated in a Propagator.", LogLevel.Trace);
 
 				Propagator prop = new Propagator(Game1.player.getTileLocation());
 				Game1.player.addItemByMenuIfNecessary(prop);
@@ -71,31 +79,6 @@ namespace BlueberryMushroomMachine
 	}
 
 	#region Harmony Patches
-	[HarmonyPatch(typeof(FarmHouse))]
-	[HarmonyPatch("showSpouseRoom")]
-	[HarmonyPatch(new Type[]{})]
-	class PropagatorSpouseRoomPatch
-	{
-		static void Postfix(FarmHouse __instance)
-		{
-			if (__instance.upgradeLevel == 3)
-				if (!Game1.player.craftingRecipes.ContainsKey(PropagatorData.mPropagatorName))
-					Game1.player.craftingRecipes.Add(PropagatorData.mPropagatorName, 0);
-		}
-	}
-	[HarmonyPatch(typeof(FarmHouse))]
-	[HarmonyPatch("setMapForUpgradeLevel")]
-	[HarmonyPatch(new Type[] { typeof(int) })]
-	class PropagatorUpgradeLevelPatch
-	{
-		static void Postfix(int level)
-		{
-			if (level == 3)
-				if (!Game1.player.craftingRecipes.ContainsKey(PropagatorData.mPropagatorName))
-					Game1.player.craftingRecipes.Add(PropagatorData.mPropagatorName, 0);
-		}
-	}
-	
 	[HarmonyPatch(typeof(CraftingRecipe))]
 	[HarmonyPatch("createItem")]
 	[HarmonyPatch(new Type[] { })]
@@ -103,7 +86,9 @@ namespace BlueberryMushroomMachine
 	{
 		static void Postfix(CraftingRecipe __instance, Item __result)
 		{
-			if (__instance.name.Equals(PropagatorData.mPropagatorName))
+			// Intercept machine crafts with a Propagator subclass,
+			// rather than a generic nonfunctional craftable.
+			if (__instance.name.Equals(PropagatorData.PropagatorName))
 				__result = new Propagator(Game1.player.getTileLocation());
 		}
 	}
@@ -121,8 +106,8 @@ namespace BlueberryMushroomMachine
 				.pagesOfCraftingRecipes[___currentCraftingPage][c]
 				.createItem();
 
-			// Fall through the prefix for any craftables other than this machine.
-			if (!tempItem.Name.Equals(PropagatorData.mPropagatorName))
+			// Fall through the prefix for any craftables other than the Propagator.
+			if (!tempItem.Name.Equals(PropagatorData.PropagatorName))
 				return true;
 
 			// Behaviours as from base method.

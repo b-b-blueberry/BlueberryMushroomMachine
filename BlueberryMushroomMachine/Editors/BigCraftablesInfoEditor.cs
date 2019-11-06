@@ -14,11 +14,7 @@ namespace BlueberryMushroomMachine.Editors
 		{
 			// Inject custom object data with appending index.
 			IDictionary<int, string> data = asset.AsDictionary<int, string>().Data;
-			data.Add(PropagatorData.mPropagatorIndex, PropagatorData.mObjectData);
-
-			PropagatorMod.mMonitor.Log("BigCraftablesInfoEditor"
-				+ "\nEdited : " + data[PropagatorData.mPropagatorIndex],
-				LogLevel.Trace);
+			data.Add(PropagatorData.PropagatorIndex, PropagatorData.ObjectData);
 		}
 	}
 }

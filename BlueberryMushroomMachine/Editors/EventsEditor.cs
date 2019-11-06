@@ -8,45 +8,57 @@ namespace BlueberryMushroomMachine.Editors
 	{
 		public bool CanEdit<T>(IAssetInfo asset)
 		{
-			return asset.AssetNameEquals("Data\\Events\\Farm");
+			return asset.AssetNameEquals("Characters\\Dialogue\\Robin")
+				|| asset.AssetNameEquals("Data\\Events\\Farm");
 		}
 
 		public void Edit<T>(IAssetData asset)
 		{
 			var data = asset.AsDictionary<string, string>().Data;
-			var json = PropagatorMod.mHelper.Content
-				.Load<IDictionary<string, string>>
-				(PropagatorData.mEventsPath);
 
+			// Event 0000: Robin
+			// Pre-Demetrius-event dialogue.
+			if (asset.AssetNameEquals("Characters\\Dialogue\\Robin"))
+			{
+				var json = PropagatorMod.Helper.Content
+					.Load<IDictionary<string, string> >
+					(PropagatorData.EventsPath);
+
+				string key = "event.4637.0000.0000";
+				data.Add(key, PropagatorMod.i18n.Get(key));
+			}
+
+			// Event 0001: Farm, Demetrius
+			// Receive Propagator recipe after house upgrade level 3
+			// and player did not choose the Fruit Cave.
 			if (asset.AssetNameEquals("Data\\Events\\Farm"))
 			{
-				foreach (var kv in json)
+				var json = PropagatorMod.Helper.Content
+					.Load<IDictionary<string, string>>
+					(PropagatorData.EventsPath);
+
+				foreach (var key in json.Keys)
 				{
-					if (kv.Key.StartsWith("46370001"))
+					if (key.StartsWith("46370001"))
 					{
-						// Event 0001: Farm, Demetrius
-						// Receive Propagator recipe upon house upgrade level 3
-						// and player did not choose the Fruit Cave.
 						if (Game1.player.HouseUpgradeLevel >= 3)
 						{
-							if (PropagatorMod.mConfig.DisabledForFruitCave
+							if (PropagatorMod.Config.DisabledForFruitCave
 								&& Game1.player.caveChoice.Value != 2)
 								return;
 
-							json[kv.Key] = string.Format(json[kv.Key],
-								PropagatorMod.i18n.Get("event.0001.0000"),
-								PropagatorMod.i18n.Get("event.0001.0001"),
-								PropagatorMod.i18n.Get("event.0001.0002"),
-								PropagatorMod.i18n.Get("event.0001.0003"));
+							data.Add(key, string.Format(json[key],
+								PropagatorMod.i18n.Get("event.4637.0001.0000"),
+								PropagatorMod.i18n.Get("event.4637.0001.0001"),
+								PropagatorMod.i18n.Get("event.4637.0001.0002"),
+								PropagatorMod.i18n.Get("event.4637.0001.0003")));
+
+							PropagatorMod.Monitor.Log("Patched : " + data[key],
+								LogLevel.Debug);
 						}
 					}
 				}
 			}
-
-			// Populate the target event data file with all the new data.
-			if (data != null && json != null)
-				foreach (var kv in json)
-					data.Add(kv.Key, kv.Value);
 		}
 	}
 }
