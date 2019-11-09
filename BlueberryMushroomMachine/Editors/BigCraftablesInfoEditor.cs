@@ -13,7 +13,7 @@ namespace BlueberryMushroomMachine.Editors
 		public void Edit<T>(IAssetData asset)
 		{
 			// Inject custom object data with appending index.
-			IDictionary<int, string> data = asset.AsDictionary<int, string>().Data;
+			var data = asset.AsDictionary<int, string>().Data;
 			data.Add(PropagatorData.PropagatorIndex, PropagatorData.ObjectData);
 		}
 	}

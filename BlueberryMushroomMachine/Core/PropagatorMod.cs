@@ -58,8 +58,8 @@ namespace BlueberryMushroomMachine
 
 		private void OnDayStarted(object sender, DayStartedEventArgs e)
 		{
+			// Add Robin's pre-Demetrius-event dialogue.
 			if (Game1.player.daysUntilHouseUpgrade.Value == 2 && Game1.player.HouseUpgradeLevel == 2)
-				// Add Robin's pre-Demetrius-event dialogue.
 				Game1.player.activeDialogueEvents.Add("event.4637.0000.0000", 7);
 		}
 
@@ -68,17 +68,21 @@ namespace BlueberryMushroomMachine
 			e.Button.TryGetKeyboard(out Keys keyPressed);
 
 			// Debug functionalities.
-			if (keyPressed.ToSButton().Equals(Config.GivePropagatorKey))
+			if (Game1.activeClickableMenu == null)
 			{
-				Monitor.Log(Game1.player.Name + " cheated in a Propagator.", LogLevel.Trace);
+				if (keyPressed.ToSButton().Equals(Config.GivePropagatorKey))
+				{
+					Monitor.Log(Game1.player.Name + " cheated in a Propagator.", LogLevel.Trace);
 
-				Propagator prop = new Propagator(Game1.player.getTileLocation());
-				Game1.player.addItemByMenuIfNecessary(prop);
+					Propagator prop = new Propagator(Game1.player.getTileLocation());
+					Game1.player.addItemByMenuIfNecessary(prop);
+				}
 			}
 		}
 	}
 
 	#region Harmony Patches
+
 	[HarmonyPatch(typeof(CraftingRecipe))]
 	[HarmonyPatch("createItem")]
 	[HarmonyPatch(new Type[] { })]
@@ -132,5 +136,6 @@ namespace BlueberryMushroomMachine
 			return false;
 		}
 	}
+
 	#endregion
 }

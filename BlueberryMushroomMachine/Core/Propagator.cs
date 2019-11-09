@@ -17,8 +17,8 @@ namespace BlueberryMushroomMachine
 	public class Propagator : Cask, ISaveElement
 	{
 		// Custom members
-		private int Quantity;
-		private bool ProduceExtra;
+		public int Quantity;
+		public bool ProduceExtra;
 		private static Texture2D OverlayTexture;
 
 		// Hidden members
@@ -95,10 +95,26 @@ namespace BlueberryMushroomMachine
 		/// Instantiates any mushroom objects currently attached to
 		/// the machine when the farm is loaded.
 		/// </summary>
-		private void loadHeldObject(int index, int quality, int quantity)
+		private void loadHeldObject(int index, int quality, int quantity, int days, bool produceExtra)
 		{
 			if (index >= 0 && quality >= 0 && quantity >= 0)
 			{
+				Item obj = new StardewValley.Object(index, 1)
+					{ Quality = quality };
+
+				if (PropagatorData.MushroomGrowingRates.TryGetValue(index, out float rate))
+				{
+					putObject(obj.getOne(), rate);
+					Quantity = quantity;
+					daysToMature.Value = days;
+					ProduceExtra = produceExtra;
+				}
+				else
+				{
+					PropagatorMod.Monitor.Log("Failed to reload held object: See TRACE",
+						LogLevel.Error);
+				}
+
 				PropagatorData.MushroomQuantityLimits.TryGetValue(
 					index, out int max);
 				PropagatorMod.Monitor.Log(
@@ -109,11 +125,6 @@ namespace BlueberryMushroomMachine
 					+ " [+" + agingRate + "])",
 					LogLevel.Trace);
 
-				Quantity = quantity;
-				Item obj = new StardewValley.Object(index, 1)
-					{ Quality = quality };
-				if (PropagatorData.MushroomGrowingRates.TryGetValue(index, out int rate))
-					putObject(obj.getOne(), rate);
 			}
 		}
 		
@@ -191,11 +202,10 @@ namespace BlueberryMushroomMachine
 
 			// Incorporate Gatherer's skill effects for extra production.
 			int extra = 0;
-			/*
-			if (ProduceDouble && Game1.player.professions.Contains(Farmer.gatherer)
+			if (ProduceExtra && Game1.player.professions.Contains(Farmer.gatherer)
 				&& new Random().Next(5) == 0)
 				extra = 1;
-				*/
+			
 			// Extract held object.
 			Game1.playSound("coin");
 			Game1.createMultipleObjectDebris(heldObject.Value.ParentSheetIndex,
@@ -249,9 +259,13 @@ namespace BlueberryMushroomMachine
 			if (heldObject.Value == null)
 				return;
 
-			ProduceExtra = true;
+			// Progress the growth of the stack per each mushroom's rate.
+			daysToMature.Value += defaultDaysToMature * agingRate;
 			minutesUntilReady.Value = 999999;
-			daysToMature.Value += agingRate;
+
+			// Mark the machine as having grown overnight, allowing
+			// the user to pop out extra mushrooms.
+			ProduceExtra = true;
 
 			PropagatorData.MushroomQuantityLimits.TryGetValue(
 				heldObject.Value.ParentSheetIndex, out int max);
@@ -267,14 +281,14 @@ namespace BlueberryMushroomMachine
 		}
 
 		/// <summary>
-		/// Updates item quantity as the per-day maturity timer counts down.
+		/// Updates object quantity as the per-day maturity timer counts down.
 		/// </summary>
 		public new void checkForMaturity()
 		{
-			// Mature the held item over time, increasing the quantity.
+			// Mature the held mushroom over time, growing the quantity.
 			if (daysToMature >= defaultDaysToMature)
 			{
-				// Stop adding to the quantity when the limit is reached.
+				// Stop adding to the stack when the limit is reached.
 				PropagatorData.MushroomQuantityLimits.TryGetValue(
 					heldObject.Value.ParentSheetIndex, out int max);
 				if (Quantity >= max)
@@ -285,7 +299,7 @@ namespace BlueberryMushroomMachine
 				
 				PropagatorMod.Monitor.Log(
 					"Matured to val(" + Quality + ") qty(" + Quantity + "/" + max + ")",
-					LogLevel.Debug);
+					LogLevel.Trace);
 			}
 		}
 
@@ -327,10 +341,6 @@ namespace BlueberryMushroomMachine
 			{
 				popObject(false);
 				return true;
-			}
-			else
-			{
-				PropagatorMod.Monitor.Log("null value", LogLevel.Debug);
 			}
 			return false;
 		}
@@ -417,13 +427,13 @@ namespace BlueberryMushroomMachine
 				return false;
 
 			// Ignore wrong items.
-			if (!PropagatorData.MushroomGrowingRates.TryGetValue(dropIn.ParentSheetIndex, out int num))
+			if (!PropagatorData.MushroomGrowingRates.TryGetValue(dropIn.ParentSheetIndex, out float rate))
 				return false;
 
 			// Accept the deposited item.
 			if (!probe)
 			{
-				putObject(dropIn, num);
+				putObject(dropIn, rate);
 				who.currentLocation.playSound("Ship");
 			}
 			return true;
@@ -543,7 +553,8 @@ namespace BlueberryMushroomMachine
 				{ "heldObjectIndex", putIndex.ToString() },
 				{ "heldObjectQuality", putQuality.ToString() },
 				{ "heldObjectQuantity", putQuantity.ToString() },
-				{ "produceDouble", ProduceExtra.ToString() }
+				{ "produceExtra", ProduceExtra.ToString() },
+				{ "days", daysToMature.Value.ToString() },
 			};
 		}
 
@@ -556,13 +567,12 @@ namespace BlueberryMushroomMachine
 			float.TryParse(additionalSaveData["tileLocationY"], out float y);
 			TileLocation = new Vector2(x, y);
 
+			int.TryParse(additionalSaveData["days"], out int days);
+			bool.TryParse(additionalSaveData["produceExtra"], out bool produceExtra);
 			int.TryParse(additionalSaveData["heldObjectIndex"], out int heldObjectIndex);
 			int.TryParse(additionalSaveData["heldObjectQuality"], out int heldObjectQuality);
 			int.TryParse(additionalSaveData["heldObjectQuantity"], out int heldObjectQuantity);
-			loadHeldObject(heldObjectIndex, heldObjectQuality, heldObjectQuantity);
-
-			bool.TryParse(additionalSaveData["produceDouble"], out bool produceDouble);
-			ProduceExtra = produceDouble;
+			loadHeldObject(heldObjectIndex, heldObjectQuality, heldObjectQuantity, days, produceExtra);
 		}
 	}
 }

@@ -24,17 +24,16 @@ namespace BlueberryMushroomMachine.Editors
 					.Load<IDictionary<string, string> >
 					(PropagatorData.EventsPath);
 
-				string key = "event.4637.0000.0000";
+				var key = "event.4637.0000.0000";
 				data.Add(key, PropagatorMod.i18n.Get(key));
 			}
 
 			// Event 0001: Farm, Demetrius
-			// Receive Propagator recipe after house upgrade level 3
-			// and player did not choose the Fruit Cave.
+			// Receive Propagator recipe after house upgrade level 3.
 			if (asset.AssetNameEquals("Data\\Events\\Farm"))
 			{
 				var json = PropagatorMod.Helper.Content
-					.Load<IDictionary<string, string>>
+					.Load<IDictionary<string, string> >
 					(PropagatorData.EventsPath);
 
 				foreach (var key in json.Keys)
@@ -52,9 +51,6 @@ namespace BlueberryMushroomMachine.Editors
 								PropagatorMod.i18n.Get("event.4637.0001.0001"),
 								PropagatorMod.i18n.Get("event.4637.0001.0002"),
 								PropagatorMod.i18n.Get("event.4637.0001.0003")));
-
-							PropagatorMod.Monitor.Log("Patched : " + data[key],
-								LogLevel.Debug);
 						}
 					}
 				}

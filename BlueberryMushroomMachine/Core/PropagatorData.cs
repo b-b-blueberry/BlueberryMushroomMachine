@@ -33,13 +33,13 @@ namespace BlueberryMushroomMachine
 				{422, 4},		// Purple Mushroom
 			};
 
-		internal static Dictionary<int, int> MushroomGrowingRates =
-			new Dictionary<int, int> {
-				{257, 2},		// Morel
-				{281, 2},		// Chantarelle
-				{404, 4},		// Common Mushroom
-				{420, 2},		// Red Mushroom
-				{422, 1},		// Purple Mushroom
+		internal static Dictionary<int, float> MushroomGrowingRates =
+			new Dictionary<int, float> {
+				{257, 0.5f},	// Morel
+				{281, 0.5f},	// Chantarelle
+				{404, 1.0f},	// Common Mushroom
+				{420, 0.5f},	// Red Mushroom
+				{422, 0.25f},	// Purple Mushroom
 			};
 
 		internal static Dictionary<int, int> MushroomQuantityLimits =

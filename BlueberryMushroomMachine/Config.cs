@@ -15,6 +15,6 @@ namespace BlueberryMushroomMachine
 		public bool DisabledForFruitCave { get; set; } = true;
 
 		public bool Debugging { get; set; } = false;
-		public SButton GivePropagatorKey { get; set; } = SButton.J;
+		public SButton GivePropagatorKey { get; set; } = SButton.F9;
 	}
 }

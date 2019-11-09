@@ -23,15 +23,15 @@ namespace BlueberryMushroomMachine.Editors
 				PropagatorData.CraftingRecipeData, PropagatorData.PropagatorIndex);
 
 			// Expand the base tilesheet.
-			Texture2D src = PropagatorMod.Helper.Content.Load<Texture2D>(PropagatorData.MachinePath);
-			IAssetDataForImage dest = asset.AsImage();
-			Rectangle srcRect = new Rectangle(0, 0, 16, 32);
-			Rectangle destRect = Propagator.getSourceRectForBigCraftable(PropagatorData.PropagatorIndex);
+			var src = PropagatorMod.Helper.Content.Load<Texture2D>(PropagatorData.MachinePath);
+			var dest = asset.AsImage();
+			var srcRect = new Rectangle(0, 0, 16, 32);
+			var destRect = Propagator.getSourceRectForBigCraftable(PropagatorData.PropagatorIndex);
 
 			if (destRect.Bottom > dest.Data.Height)
 			{
-				Texture2D original = dest.Data;
-				Texture2D texture = new Texture2D(Game1.graphics.GraphicsDevice, original.Width, destRect.Bottom);
+				var original = dest.Data;
+				var texture = new Texture2D(Game1.graphics.GraphicsDevice, original.Width, destRect.Bottom);
 				dest.ReplaceWith(texture);
 				dest.PatchImage(original);
 			}

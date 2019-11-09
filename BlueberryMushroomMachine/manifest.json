@@ -2,7 +2,7 @@
   "Name": "Mushroom Propagator",
   "Author": "blueberry",
   "Version": "1.0.0",
-  "Description": "Mushroom-growing machine for the Farmhouse cellar and other locations.",
+  "Description": "Mushroom-growing machine for the Farmhouse cellar and elsewhere.",
   "UniqueID": "blueberry.BlueberryMushroomMachine",
   "EntryDll": "BlueberryMushroomMachine.dll",
   "MinimumApiVersion": "2.11",

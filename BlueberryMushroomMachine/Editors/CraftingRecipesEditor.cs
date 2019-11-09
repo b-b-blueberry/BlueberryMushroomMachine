@@ -13,7 +13,7 @@ namespace BlueberryMushroomMachine.Editors
 		public void Edit<T>(IAssetData asset)
 		{
 			// Inject crafting recipe data using custom appended index as the result.
-			IDictionary<string, string> data = asset.AsDictionary<string, string>().Data;
+			var data = asset.AsDictionary<string, string>().Data;
 			data.Add(PropagatorData.PropagatorName, PropagatorData.CraftingRecipeData);
 		}
 	}
