@@ -9,7 +9,7 @@ namespace BlueberryMushroomMachine
 		public bool WorksInCellar { get; set; } = true;
 		public bool WorksInFarmCave { get; set; } = true;
 		public bool WorksInBuildings { get; set; } = false;
-		public bool WorksInFarmHouse { get; set; } = true;
+		public bool WorksInFarmHouse { get; set; } = false;
 		public bool WorksInGreenhouse { get; set; } = false;
 		public bool WorksOutdoors { get; set; } = false;
 		public bool DisabledForFruitCave { get; set; } = true;
