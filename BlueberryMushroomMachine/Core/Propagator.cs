@@ -19,11 +19,11 @@ namespace BlueberryMushroomMachine
 		// Custom members
 		public int Quantity;
 		public bool ProduceExtra;
-		private static Texture2D OverlayTexture;
+		private static Texture2D SOverlayTexture;
 
 		// Hidden members
 		public new readonly int defaultDaysToMature
-			= PropagatorMod.Helper.ReadConfig<Config>().MaximumDaysToMature;
+			= PropagatorMod.SHelper.ReadConfig<Config>().MaximumDaysToMature;
 
 		public Propagator()
 		{
@@ -111,13 +111,13 @@ namespace BlueberryMushroomMachine
 				}
 				else
 				{
-					PropagatorMod.Monitor.Log("Failed to reload held object: See TRACE",
+					PropagatorMod.SMonitor.Log("Failed to reload held object: See TRACE",
 						LogLevel.Error);
 				}
 
 				PropagatorData.MushroomQuantityLimits.TryGetValue(
 					index, out int max);
-				PropagatorMod.Monitor.Log(
+				PropagatorMod.SMonitor.Log(
 					"\nLoad: " + index
 					+ " at(" + TileLocation.X + " " + TileLocation.Y
 					+ ") val(" + quality + ") qty (" + quantity + "/" + max
@@ -133,7 +133,7 @@ namespace BlueberryMushroomMachine
 		/// </summary>
 		private void loadOverlayTexture()
 		{
-			OverlayTexture = PropagatorMod.Helper.Content.Load<Texture2D>(PropagatorData.OverlayPath);
+			SOverlayTexture = PropagatorMod.SHelper.Content.Load<Texture2D>(PropagatorData.OverlayPath);
 		}
 
 		/// <summary>
@@ -192,7 +192,7 @@ namespace BlueberryMushroomMachine
 		{
 			PropagatorData.MushroomQuantityLimits.TryGetValue(
 				heldObject.Value.ParentSheetIndex, out int max);
-			PropagatorMod.Monitor.Log(
+			PropagatorMod.SMonitor.Log(
 				"\nPop: " + heldObject.Value.DisplayName
 				+ " at(" + TileLocation.X + " " + TileLocation.Y
 				+ ") val(" + Quality + ") qty (" + Quantity + "/" + max
@@ -246,7 +246,8 @@ namespace BlueberryMushroomMachine
 			double x = boundingBox.Center.X;
 			double y = boundingBox.Center.Y;
 			Vector2 playerPosition = new Vector2((float)x, (float)y);
-			Game1.currentLocation.debris.Add(new Debris(this, toolLocation, playerPosition));
+			Game1.currentLocation.debris.Add(new Debris(
+				new Propagator(TileLocation), toolLocation, playerPosition));
 			Game1.currentLocation.Objects.Remove(key);
 		}
 
@@ -257,7 +258,14 @@ namespace BlueberryMushroomMachine
 		public override void DayUpdate(GameLocation location)
 		{
 			if (heldObject.Value == null)
+			{
+				PropagatorMod.SMonitor.Log(
+					"\nUpdate:"
+					+ " (" + TileLocation.X + " " + TileLocation.Y
+					+ ") is holding a null object.",
+					LogLevel.Trace);
 				return;
+			}
 
 			// Progress the growth of the stack per each mushroom's rate.
 			daysToMature.Value += defaultDaysToMature * agingRate;
@@ -269,7 +277,7 @@ namespace BlueberryMushroomMachine
 
 			PropagatorData.MushroomQuantityLimits.TryGetValue(
 				heldObject.Value.ParentSheetIndex, out int max);
-			PropagatorMod.Monitor.Log(
+			PropagatorMod.SMonitor.Log(
 				"\nUpdate: " + heldObject.Value.DisplayName
 				+ " at(" + TileLocation.X + " " + TileLocation.Y
 				+ ") val(" + Quality + ") qty (" + Quantity + "/" + max
@@ -297,7 +305,7 @@ namespace BlueberryMushroomMachine
 				++Quantity;
 				daysToMature.Value = 0;
 				
-				PropagatorMod.Monitor.Log(
+				PropagatorMod.SMonitor.Log(
 					"Matured to val(" + Quality + ") qty(" + Quantity + "/" + max + ")",
 					LogLevel.Trace);
 			}
@@ -399,12 +407,12 @@ namespace BlueberryMushroomMachine
 			if (!probe && who != null)
 			{
 				bool flag = false;
-				if ((who.currentLocation is Cellar && PropagatorMod.Config.WorksInCellar)
-				|| (who.currentLocation is FarmCave && PropagatorMod.Config.WorksInFarmCave)
-				|| (who.currentLocation is BuildableGameLocation && PropagatorMod.Config.WorksInBuildings)
-				|| (who.currentLocation is FarmHouse && PropagatorMod.Config.WorksInFarmHouse)
-				|| (who.currentLocation.IsGreenhouse && PropagatorMod.Config.WorksInGreenhouse)
-				|| (who.currentLocation.IsOutdoors && PropagatorMod.Config.WorksOutdoors))
+				if ((who.currentLocation is Cellar && PropagatorMod.SConfig.WorksInCellar)
+				|| (who.currentLocation is FarmCave && PropagatorMod.SConfig.WorksInFarmCave)
+				|| (who.currentLocation is BuildableGameLocation && PropagatorMod.SConfig.WorksInBuildings)
+				|| (who.currentLocation is FarmHouse && PropagatorMod.SConfig.WorksInFarmHouse)
+				|| (who.currentLocation.IsGreenhouse && PropagatorMod.SConfig.WorksInGreenhouse)
+				|| (who.currentLocation.IsOutdoors && PropagatorMod.SConfig.WorksOutdoors))
 					flag = true;
 				
 				if (!flag)
@@ -518,7 +526,7 @@ namespace BlueberryMushroomMachine
 				(int)daysToMature.Value, Quantity, max);
 
 			b.Draw(
-					OverlayTexture,
+					SOverlayTexture,
 					destRect,
 					getSourceRectForOverlay(whichMushroom, whichFrame),
 					Color.White,

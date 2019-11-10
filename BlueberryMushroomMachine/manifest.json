@@ -1,13 +1,23 @@
 ﻿{
-  "Name": "Mushroom Propagator",
+  "Name": "Blueberry's Mushroom Machine",
   "Author": "blueberry",
-  "Version": "1.0",
-  "Description": "Mushroom-growing machine for the Farmhouse cellar and elsewhere.",
+  "Version": "1.1",
+  "Description": "Mushroom Propagator for the Farmhouse cellar and elsewhere.",
   "UniqueID": "blueberry.BlueberryMushroomMachine",
   "EntryDll": "BlueberryMushroomMachine.dll",
   "MinimumApiVersion": "2.11",
   "Dependencies": [
-    { "UniqueID": "Platonymous.Toolkit" }
+    {
+      "UniqueID": "Platonymous.Toolkit"
+    },
+    {
+      "UniqueID": "spacechase0.JsonAssets",
+      "IsRequired": false
+    },
+    {
+      "UniqueID": "Platonymous.CustomFarming",
+      "IsRequired": false
+    }
   ],
   "UpdateKeys": [ "Nexus:4637" ]
 }

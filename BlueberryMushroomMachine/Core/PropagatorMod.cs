@@ -15,52 +15,74 @@ namespace BlueberryMushroomMachine
 {
 	public class PropagatorMod : Mod
 	{
-		internal static Config Config;
-		internal static new IModHelper Helper;
-		internal static new IMonitor Monitor;
-		internal static ITranslationHelper i18n => Helper.Translation;
-
+		internal static Config SConfig;
+		internal static IModHelper SHelper;
+		internal static IMonitor SMonitor;
+		internal static ITranslationHelper i18n => SHelper.Translation;
+		private bool isInit;
+		
 		public override void Entry(IModHelper helper)
 		{
 			// Internals.
-			Helper = helper;
-			Monitor = base.Monitor;
-			Config = helper.ReadConfig<Config>();
+			SHelper = helper;
+			SMonitor = Monitor;
+			SConfig = helper.ReadConfig<Config>();
 
 			// Debug events.
-			if (Config.Debugging)
+			if (SConfig.Debugging)
 			{
 				// Debug shortcut hotkeys.
 				helper.Events.Input.ButtonPressed += OnButtonPressed;
 			}
 
-			// Setup dialogue addition checks.
-			Helper.Events.GameLoop.DayStarted += OnDayStarted;
+			SHelper.Events.GameLoop.GameLaunched += OnGameLaunched;
+			SHelper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
+			SHelper.Events.GameLoop.DayStarted += OnDayStarted;
 
-			// Inject sprite into the Craftables tilesheet, then use this to index object metadata.
-			Helper.Content.AssetEditors.Add(new Editors.BigCraftablesTilesheetEditor());
-			Helper.Events.GameLoop.GameLaunched += OnGameLaunched;
-			
 			// Harmony setup.
 			var harmony = HarmonyInstance.Create("blueberry.BlueberryMushroomMachine");
 			harmony.PatchAll(Assembly.GetExecutingAssembly());
 		}
 		
+		internal static void InjectCustomObjectData()
+		{
+			// Inject recipe into the Craftables data sheet.
+			SHelper.Content.AssetEditors.Add(new Editors.CraftingRecipesEditor());
+			// Inject sprite into the Craftables tilesheet.
+			SHelper.Content.AssetEditors.Add(new Editors.BigCraftablesTilesheetEditor());
+		}
+
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
 		{
-			// Inject custom events.
-			Helper.Content.AssetEditors.Add(new Editors.EventsEditor());
+			// Add Demetrius' event.
+			SHelper.Content.AssetEditors.Add(new Editors.EventsEditor());
+		}
 
-			// Edit later all assets that rely on a generated object index.
-			Helper.Content.AssetEditors.Add(new Editors.BigCraftablesInfoEditor());
-			Helper.Content.AssetEditors.Add(new Editors.CraftingRecipesEditor());
+		private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
+		{
+			// Identify the tilesheet index for the machine.
+			if (PropagatorData.PropagatorIndex == 0)
+				SHelper.Content.AssetEditors.Add(new Editors.BigCraftablesInfoEditor());
 		}
 
 		private void OnDayStarted(object sender, DayStartedEventArgs e)
 		{
+			// Edit all assets that rely on the generated object index.
+			if (!isInit)
+				InjectCustomObjectData();
+			isInit = true;
+
 			// Add Robin's pre-Demetrius-event dialogue.
 			if (Game1.player.daysUntilHouseUpgrade.Value == 2 && Game1.player.HouseUpgradeLevel == 2)
 				Game1.player.activeDialogueEvents.Add("event.4637.0000.0000", 7);
+
+			// Add the Propagator crafting recipe if the cheat is enabled.
+			SMonitor.Log("Recipe always available: " + SConfig.RecipeAlwaysAvailable.ToString(), LogLevel.Trace);
+			if (SConfig.RecipeAlwaysAvailable)
+			{
+				SMonitor.Log(Game1.player.Name + " cheated in the recipe.", LogLevel.Trace);
+				Game1.player.craftingRecipes.Add(PropagatorData.PropagatorName, 0);
+			}
 		}
 
 		private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
@@ -70,9 +92,9 @@ namespace BlueberryMushroomMachine
 			// Debug functionalities.
 			if (Game1.activeClickableMenu == null)
 			{
-				if (keyPressed.ToSButton().Equals(Config.GivePropagatorKey))
+				if (keyPressed.ToSButton().Equals(SConfig.GivePropagatorKey))
 				{
-					Monitor.Log(Game1.player.Name + " cheated in a Propagator.", LogLevel.Trace);
+					SMonitor.Log(Game1.player.Name + " cheated in a Propagator.", LogLevel.Trace);
 
 					Propagator prop = new Propagator(Game1.player.getTileLocation());
 					Game1.player.addItemByMenuIfNecessary(prop);

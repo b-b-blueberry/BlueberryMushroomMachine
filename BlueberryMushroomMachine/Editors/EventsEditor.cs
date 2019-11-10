@@ -20,7 +20,7 @@ namespace BlueberryMushroomMachine.Editors
 			// Pre-Demetrius-event dialogue.
 			if (asset.AssetNameEquals("Characters\\Dialogue\\Robin"))
 			{
-				var json = PropagatorMod.Helper.Content
+				var json = PropagatorMod.SHelper.Content
 					.Load<IDictionary<string, string> >
 					(PropagatorData.EventsPath);
 
@@ -32,7 +32,7 @@ namespace BlueberryMushroomMachine.Editors
 			// Receive Propagator recipe after house upgrade level 3.
 			if (asset.AssetNameEquals("Data\\Events\\Farm"))
 			{
-				var json = PropagatorMod.Helper.Content
+				var json = PropagatorMod.SHelper.Content
 					.Load<IDictionary<string, string> >
 					(PropagatorData.EventsPath);
 
@@ -42,7 +42,7 @@ namespace BlueberryMushroomMachine.Editors
 					{
 						if (Game1.player.HouseUpgradeLevel >= 3)
 						{
-							if (PropagatorMod.Config.DisabledForFruitCave
+							if (PropagatorMod.SConfig.DisabledForFruitCave
 								&& Game1.player.caveChoice.Value != 2)
 								return;
 

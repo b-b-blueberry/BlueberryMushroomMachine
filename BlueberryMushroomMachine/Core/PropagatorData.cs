@@ -5,8 +5,7 @@ namespace BlueberryMushroomMachine
 {
 	class PropagatorData
 	{
-		internal const string PropagatorName =
-			"Propagator";
+		internal const string PropagatorName = "Propagator";
 
 		internal static readonly string MachinePath =
 			Path.Combine("assets", "propagator.png");
@@ -15,7 +14,7 @@ namespace BlueberryMushroomMachine
 		internal static readonly string EventsPath =
 			Path.Combine("assets", "events.json");
 
-		internal static int PropagatorIndex;
+		internal static int PropagatorIndex = 0;
 		internal static string ObjectData =
 			PropagatorMod.i18n.Get("machine.name")
 			+ "/0/-300/Crafting -9/" +
