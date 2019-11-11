@@ -1,5 +1,4 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Linq;
 
 using Microsoft.Xna.Framework.Input;
 
@@ -91,6 +90,16 @@ namespace BlueberryMushroomMachine
 				SMonitor.Log(Game1.player.Name + " cheated in the recipe.", LogLevel.Trace);
 				if (!Game1.player.craftingRecipes.ContainsKey(PropagatorData.PropagatorName))
 					Game1.player.craftingRecipes.Add(PropagatorData.PropagatorName, 0);
+			}
+
+			// TEMPORARY FIX: Manually DayUpdate each Propagator.
+			// PyTK 1.9.11+ rebuilds objects at DayEnding, so Cask.DayUpdate is never called.
+			// Also fixes 0-index objects from PyTK rebuilding before the new index is generated.
+			foreach (var loc in Game1.locations)
+			{
+				var objs = loc.Objects.Values.Where(o => o.Name.Equals(PropagatorData.PropagatorName));
+				foreach (Propagator obj in objs)
+					obj.TemporaryDayUpdate();
 			}
 		}
 

@@ -12,13 +12,6 @@ using StardewModdingAPI;
 
 using PyTK.CustomElementHandler;
 
-/*
- * 
- * flip the aging rate you idiot
- * you got it backwards now
- *
- */
-
 namespace BlueberryMushroomMachine
 {
 	public class Propagator : Cask, ISaveElement
@@ -60,7 +53,7 @@ namespace BlueberryMushroomMachine
 		{
 			return PropagatorMod.i18n.Get("machine.desc");
 		}
-
+		
 		private void loadDefaultValues()
 		{
 			canBeSetDown.Value = true;
@@ -130,7 +123,7 @@ namespace BlueberryMushroomMachine
 					+ ") val(" + quality + ") qty (" + quantity + "/" + max
 					+ ") age(" + daysToMature + "/" + defaultDaysToMature
 					+ " [+" + agingRate + "])",
-					LogLevel.Trace);
+					LogLevel.Debug);
 
 			}
 		}
@@ -153,8 +146,8 @@ namespace BlueberryMushroomMachine
 		private int getWhichFrameForOverlay(int days, int quantity, int max)
 		{
 			float maths =
-				((quantity + ((float)days / defaultDaysToMature)) * defaultDaysToMature)
-				/ (max * defaultDaysToMature)
+				(((quantity - 1) + ((float)days / defaultDaysToMature)) * defaultDaysToMature)
+				/ ((max - 1) * defaultDaysToMature)
 				* 3f;
 			
 			return (int)Math.Floor(maths);
@@ -205,7 +198,7 @@ namespace BlueberryMushroomMachine
 				+ ") val(" + Quality + ") qty (" + Quantity + "/" + max
 				+ ") age(" + daysToMature + "/" + defaultDaysToMature
 				+ " [+" + agingRate + "])",
-				LogLevel.Trace);
+				LogLevel.Debug);
 
 			// Incorporate Gatherer's skill effects for extra production.
 			int extra = 0;
@@ -259,24 +252,23 @@ namespace BlueberryMushroomMachine
 		}
 
 		/// <summary>
-		/// Runs through all start-of-day checks.
+		/// Band-aid function to perform all end-of-day checks
+		/// for the Propagator to handle held object events.
 		/// </summary>
-		/// <param name="location">Used for default game behaviours.</param>
-		public override void DayUpdate(GameLocation location)
+		internal void TemporaryDayUpdate()
 		{
+			// Indexing inconsistencies with JA/CFR.
+			ParentSheetIndex = PropagatorData.PropagatorIndex;
+
 			if (heldObject.Value == null)
 			{
 				PropagatorMod.SMonitor.Log(
 					"\nUpdate:"
 					+ " (" + TileLocation.X + " " + TileLocation.Y
 					+ ") is holding a null object.",
-					LogLevel.Trace);
+					LogLevel.Debug);
 				return;
 			}
-
-			// Progress the growth of the stack per each mushroom's rate.
-			daysToMature.Value += defaultDaysToMature * agingRate;
-			minutesUntilReady.Value = 999999;
 
 			// Mark the machine as having grown overnight, allowing
 			// the user to pop out extra mushrooms.
@@ -290,9 +282,19 @@ namespace BlueberryMushroomMachine
 				+ ") val(" + Quality + ") qty (" + Quantity + "/" + max
 				+ ") age(" + daysToMature + "/" + defaultDaysToMature
 				+ " [+" + agingRate + "])",
-				LogLevel.Trace);
+				LogLevel.Debug);
 
 			checkForMaturity();
+		}
+
+		/// <summary>
+		/// Runs through all start-of-day checks.
+		/// Temporarily stubbed for incompatibilities.
+		/// </summary>
+		/// <param name="location">Used for default game behaviours.</param>
+		public override void DayUpdate(GameLocation location)
+		{
+			return;
 		}
 
 		/// <summary>
@@ -300,21 +302,25 @@ namespace BlueberryMushroomMachine
 		/// </summary>
 		public new void checkForMaturity()
 		{
+			// Stop adding to the stack when the limit is reached.
+			PropagatorData.MushroomQuantityLimits.TryGetValue(
+				heldObject.Value.ParentSheetIndex, out int max);
+			if (Quantity >= max)
+				return;
+
+			// Progress the growth of the stack per each mushroom's rate.
+			daysToMature.Value += Math.Max(1, defaultDaysToMature * agingRate);
+			minutesUntilReady.Value = 999999;
+
 			// Mature the held mushroom over time, growing the quantity.
 			if (daysToMature >= defaultDaysToMature)
 			{
-				// Stop adding to the stack when the limit is reached.
-				PropagatorData.MushroomQuantityLimits.TryGetValue(
-					heldObject.Value.ParentSheetIndex, out int max);
-				if (Quantity >= max)
-					return;
-
 				++Quantity;
 				daysToMature.Value = 0;
 				
 				PropagatorMod.SMonitor.Log(
 					"Matured to val(" + Quality + ") qty(" + Quantity + "/" + max + ")",
-					LogLevel.Trace);
+					LogLevel.Debug);
 			}
 		}
 
@@ -588,6 +594,10 @@ namespace BlueberryMushroomMachine
 			int.TryParse(additionalSaveData["heldObjectQuality"], out int heldObjectQuality);
 			int.TryParse(additionalSaveData["heldObjectQuantity"], out int heldObjectQuantity);
 			loadHeldObject(heldObjectIndex, heldObjectQuality, heldObjectQuantity, days, produceExtra);
+
+			PropagatorMod.SMonitor.Log("Rebuilt " + Name + " (" + ParentSheetIndex + ") "
+				+ " at " + TileLocation.X + " " + TileLocation.Y,
+				LogLevel.Debug);
 		}
 	}
 }
