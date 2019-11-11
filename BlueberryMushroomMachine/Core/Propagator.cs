@@ -12,6 +12,13 @@ using StardewModdingAPI;
 
 using PyTK.CustomElementHandler;
 
+/*
+ * 
+ * flip the aging rate you idiot
+ * you got it backwards now
+ *
+ */
+
 namespace BlueberryMushroomMachine
 {
 	public class Propagator : Cask, ISaveElement

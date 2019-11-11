@@ -41,9 +41,17 @@ namespace BlueberryMushroomMachine
 
 			// Harmony setup.
 			var harmony = HarmonyInstance.Create("blueberry.BlueberryMushroomMachine");
-			harmony.PatchAll(Assembly.GetExecutingAssembly());
+			
+			harmony.Patch(
+				original: AccessTools.Method(typeof(CraftingRecipe), nameof(CraftingRecipe.createItem)),
+				postfix: new HarmonyMethod(typeof(CraftingRecipePatch), nameof(CraftingRecipePatch.Postfix)));
+			harmony.Patch(
+				original: AccessTools.Method(typeof(CraftingPage), "clickCraftingRecipe"),
+				prefix: new HarmonyMethod(typeof(CraftingPagePatch), nameof(CraftingPagePatch.Prefix)));
 		}
-		
+
+		#region Game Events
+
 		internal static void InjectCustomObjectData()
 		{
 			// Inject recipe into the Craftables data sheet.
@@ -61,10 +69,10 @@ namespace BlueberryMushroomMachine
 		private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
 		{
 			// Identify the tilesheet index for the machine.
-			if (PropagatorData.PropagatorIndex == 0)
+			if (!isInit || !Game1.bigCraftablesInformation.ContainsKey(PropagatorData.PropagatorIndex))
 				SHelper.Content.AssetEditors.Add(new Editors.BigCraftablesInfoEditor());
 		}
-
+		
 		private void OnDayStarted(object sender, DayStartedEventArgs e)
 		{
 			// Edit all assets that rely on the generated object index.
@@ -81,7 +89,8 @@ namespace BlueberryMushroomMachine
 			if (SConfig.RecipeAlwaysAvailable)
 			{
 				SMonitor.Log(Game1.player.Name + " cheated in the recipe.", LogLevel.Trace);
-				Game1.player.craftingRecipes.Add(PropagatorData.PropagatorName, 0);
+				if (!Game1.player.craftingRecipes.ContainsKey(PropagatorData.PropagatorName))
+					Game1.player.craftingRecipes.Add(PropagatorData.PropagatorName, 0);
 			}
 		}
 
@@ -101,16 +110,15 @@ namespace BlueberryMushroomMachine
 				}
 			}
 		}
+
+		#endregion
 	}
 
 	#region Harmony Patches
-
-	[HarmonyPatch(typeof(CraftingRecipe))]
-	[HarmonyPatch("createItem")]
-	[HarmonyPatch(new Type[] { })]
-	class PropagatorCraftingRecipeCreatePatch
+	
+	class CraftingRecipePatch
 	{
-		static void Postfix(CraftingRecipe __instance, Item __result)
+		internal static void Postfix(CraftingRecipe __instance, Item __result)
 		{
 			// Intercept machine crafts with a Propagator subclass,
 			// rather than a generic nonfunctional craftable.
@@ -119,12 +127,9 @@ namespace BlueberryMushroomMachine
 		}
 	}
 	
-	[HarmonyPatch(typeof(CraftingPage))]
-	[HarmonyPatch("clickCraftingRecipe")]
-	[HarmonyPatch(new Type[] { typeof(ClickableTextureComponent), typeof(bool) })]
-	class PropagatorCraftingPagePatch
+	class CraftingPagePatch
 	{
-		static bool Prefix(CraftingPage __instance, int ___currentCraftingPage, Item ___heldItem,
+		internal static bool Prefix(CraftingPage __instance, int ___currentCraftingPage, Item ___heldItem,
 			ClickableTextureComponent c, bool playSound = true)
 		{
 			// Fetch an instance of any clicked-on craftable in the crafting menu.
