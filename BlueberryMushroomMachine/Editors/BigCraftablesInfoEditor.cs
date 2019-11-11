@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using StardewValley;
 using StardewModdingAPI;
 
@@ -16,9 +17,9 @@ namespace BlueberryMushroomMachine.Editors
 
 			// Slide into a free tilesheet index.
 			var indicesPerRow = Game1.bigCraftableSpriteSheet.Width / 16;
-			var index = data.Keys.Max();			// Seek to the end of the spritesheet.
-			index += index % indicesPerRow;			// Add to the start of the next row.
-			PropagatorData.PropagatorIndex = index; // Bob's your monkey.
+			var index = data.Keys.Max();						// Seek to the end of the spritesheet.
+			index += indicesPerRow - (index % indicesPerRow);	// Add to the start of the next row.
+			PropagatorData.PropagatorIndex = index;				// It works this time I promise
 
 			PropagatorMod.SMonitor.Log("Propagator Index:" + PropagatorData.PropagatorIndex,
 				LogLevel.Trace);
