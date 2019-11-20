@@ -12,6 +12,16 @@ using StardewModdingAPI;
 
 using PyTK.CustomElementHandler;
 
+/*
+ * 
+ * todo:
+ * 
+ *		fix outdoors collisions
+ *		
+ *		look into automate integration
+ * 
+ */
+
 namespace BlueberryMushroomMachine
 {
 	public class Propagator : Cask, ISaveElement
@@ -123,7 +133,7 @@ namespace BlueberryMushroomMachine
 					+ ") val(" + quality + ") qty (" + quantity + "/" + max
 					+ ") age(" + daysToMature + "/" + defaultDaysToMature
 					+ " [+" + agingRate + "])",
-					LogLevel.Debug);
+					LogLevel.Trace);
 
 			}
 		}
@@ -198,7 +208,7 @@ namespace BlueberryMushroomMachine
 				+ ") val(" + Quality + ") qty (" + Quantity + "/" + max
 				+ ") age(" + daysToMature + "/" + defaultDaysToMature
 				+ " [+" + agingRate + "])",
-				LogLevel.Debug);
+				LogLevel.Trace);
 
 			// Incorporate Gatherer's skill effects for extra production.
 			int extra = 0;
@@ -266,7 +276,7 @@ namespace BlueberryMushroomMachine
 					"\nUpdate:"
 					+ " (" + TileLocation.X + " " + TileLocation.Y
 					+ ") is holding a null object.",
-					LogLevel.Debug);
+					LogLevel.Trace);
 				return;
 			}
 
@@ -282,7 +292,7 @@ namespace BlueberryMushroomMachine
 				+ ") val(" + Quality + ") qty (" + Quantity + "/" + max
 				+ ") age(" + daysToMature + "/" + defaultDaysToMature
 				+ " [+" + agingRate + "])",
-				LogLevel.Debug);
+				LogLevel.Trace);
 
 			checkForMaturity();
 		}
@@ -320,7 +330,7 @@ namespace BlueberryMushroomMachine
 				
 				PropagatorMod.SMonitor.Log(
 					"Matured to val(" + Quality + ") qty(" + Quantity + "/" + max + ")",
-					LogLevel.Debug);
+					LogLevel.Trace);
 			}
 		}
 
@@ -597,7 +607,7 @@ namespace BlueberryMushroomMachine
 
 			PropagatorMod.SMonitor.Log("Rebuilt " + Name + " (" + ParentSheetIndex + ") "
 				+ " at " + TileLocation.X + " " + TileLocation.Y,
-				LogLevel.Debug);
+				LogLevel.Trace);
 		}
 	}
 }
