@@ -8,8 +8,8 @@ namespace BlueberryMushroomMachine.Editors
 	{
 		public bool CanEdit<T>(IAssetInfo asset)
 		{
-			return asset.AssetNameEquals("Characters\\Dialogue\\Robin")
-				|| asset.AssetNameEquals("Data\\Events\\Farm");
+			return asset.AssetNameEquals(@"Characters/Dialogue/Robin")
+				|| asset.AssetNameEquals(@"Data/Events/Farm");
 		}
 
 		public void Edit<T>(IAssetData asset)
@@ -18,23 +18,21 @@ namespace BlueberryMushroomMachine.Editors
 
 			// Event 0000: Robin
 			// Pre-Demetrius-event dialogue.
-			if (asset.AssetNameEquals("Characters\\Dialogue\\Robin"))
+			if (asset.AssetNameEquals(@"Characters/Dialogue/Robin"))
 			{
-				var json = PropagatorMod.SHelper.Content
-					.Load<IDictionary<string, string> >
-					(PropagatorData.EventsPath);
+				var json = ModEntry.Instance.Helper.Content.Load<IDictionary<string, string> >
+					(Data.EventsPath);
 
 				var key = "event.4637.0000.0000";
-				data.Add(key, PropagatorMod.i18n.Get(key));
+				data.Add(key, ModEntry.Instance.i18n.Get(key));
 			}
 
 			// Event 0001: Farm, Demetrius
 			// Receive Propagator recipe after house upgrade level 3.
-			if (asset.AssetNameEquals("Data\\Events\\Farm"))
+			if (asset.AssetNameEquals(@"Data/Events/Farm"))
 			{
-				var json = PropagatorMod.SHelper.Content
-					.Load<IDictionary<string, string> >
-					(PropagatorData.EventsPath);
+				var json = ModEntry.Instance.Helper.Content.Load<IDictionary<string, string> >
+					(Data.EventsPath);
 
 				foreach (var key in json.Keys)
 				{
@@ -42,15 +40,15 @@ namespace BlueberryMushroomMachine.Editors
 					{
 						if (Game1.player.HouseUpgradeLevel >= 3)
 						{
-							if (PropagatorMod.SConfig.DisabledForFruitCave
+							if (ModEntry.Instance.Config.DisabledForFruitCave
 								&& Game1.player.caveChoice.Value != 2)
 								return;
 
 							data.Add(key, string.Format(json[key],
-								PropagatorMod.i18n.Get("event.4637.0001.0000"),
-								PropagatorMod.i18n.Get("event.4637.0001.0001"),
-								PropagatorMod.i18n.Get("event.4637.0001.0002"),
-								PropagatorMod.i18n.Get("event.4637.0001.0003")));
+								ModEntry.Instance.i18n.Get("event.4637.0001.0000"),
+								ModEntry.Instance.i18n.Get("event.4637.0001.0001"),
+								ModEntry.Instance.i18n.Get("event.4637.0001.0002"),
+								ModEntry.Instance.i18n.Get("event.4637.0001.0003")));
 						}
 					}
 				}

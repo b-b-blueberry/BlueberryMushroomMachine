@@ -9,8 +9,6 @@ using StardewValley.Objects;
 using StardewValley.Locations;
 using StardewValley.Network;
 
-using StardewModdingAPI;
-
 using PyTK.CustomElementHandler;
 
 /*
@@ -27,14 +25,14 @@ namespace BlueberryMushroomMachine
 {
 	public class Propagator : Cask, ISaveElement
 	{
+
 		// Custom members
 		public int Quantity;
 		public bool ProduceExtra;
 		private static Texture2D SOverlayTexture;
 
 		// Hidden members
-		public new readonly int defaultDaysToMature
-			= PropagatorMod.SHelper.ReadConfig<Config>().MaximumDaysToMature;
+		public new readonly int defaultDaysToMature;
 
 		public Propagator()
 		{
@@ -42,6 +40,9 @@ namespace BlueberryMushroomMachine
 		
 		public Propagator(Vector2 tileLocation)
 		{
+			defaultDaysToMature
+				= ModEntry.Instance.Helper.ReadConfig<Config>().MaximumDaysToMature;
+
 			// Take derived fields.
 			IsRecipe = isRecipe;
 			TileLocation = tileLocation;
@@ -57,12 +58,12 @@ namespace BlueberryMushroomMachine
 
 		protected override string loadDisplayName()
 		{
-			return PropagatorMod.i18n.Get("machine.name");
+			return ModEntry.Instance.i18n.Get("machine.name");
 		}
 
 		public override string getDescription()
 		{
-			return PropagatorMod.i18n.Get("machine.desc");
+			return ModEntry.Instance.i18n.Get("machine.desc");
 		}
 		
 		private void loadDefaultValues()
@@ -79,10 +80,10 @@ namespace BlueberryMushroomMachine
 		{
 			loadOverlayTexture();
 
-			Name = PropagatorData.PropagatorName;
-			ParentSheetIndex = PropagatorData.PropagatorIndex;
+			Name = Data.PropagatorName;
+			ParentSheetIndex = Data.PropagatorIndex;
 
-			string[] strArray1 = PropagatorData.ObjectData.Split('/');
+			string[] strArray1 = Data.ObjectData.Split('/');
 			displayName = strArray1[0];
 			price.Value = Convert.ToInt32(strArray1[1]);
 			edibility.Value = Convert.ToInt32(strArray1[2]);
@@ -113,7 +114,7 @@ namespace BlueberryMushroomMachine
 				Item obj = new StardewValley.Object(index, 1)
 					{ Quality = quality };
 
-				if (PropagatorData.MushroomGrowingRates.TryGetValue(index, out float rate))
+				if (Data.MushroomGrowingRates.TryGetValue(index, out float rate))
 				{
 					putObject(obj.getOne(), rate);
 					Quantity = quantity;
@@ -122,19 +123,16 @@ namespace BlueberryMushroomMachine
 				}
 				else
 				{
-					PropagatorMod.SMonitor.Log("Failed to reload held object: See TRACE",
-						LogLevel.Error);
+					Log.E("Failed to reload held object: See TRACE");
 				}
 
-				PropagatorData.MushroomQuantityLimits.TryGetValue(
+				Data.MushroomQuantityLimits.TryGetValue(
 					index, out int max);
-				PropagatorMod.SMonitor.Log(
-					"\nLoad: " + index
+				Log.T("\nLoad: " + index
 					+ " at(" + TileLocation.X + " " + TileLocation.Y
 					+ ") val(" + quality + ") qty (" + quantity + "/" + max
 					+ ") age(" + daysToMature + "/" + defaultDaysToMature
-					+ " [+" + agingRate + "])",
-					LogLevel.Trace);
+					+ " [+" + agingRate + "])");
 
 			}
 		}
@@ -144,7 +142,7 @@ namespace BlueberryMushroomMachine
 		/// </summary>
 		private void loadOverlayTexture()
 		{
-			SOverlayTexture = PropagatorMod.SHelper.Content.Load<Texture2D>(PropagatorData.OverlayPath);
+			SOverlayTexture = ModEntry.Instance.Helper.Content.Load<Texture2D>(Data.OverlayPath);
 		}
 
 		/// <summary>
@@ -201,15 +199,14 @@ namespace BlueberryMushroomMachine
 		/// </param>
 		private void popObject(bool remove)
 		{
-			PropagatorData.MushroomQuantityLimits.TryGetValue(
+			Data.MushroomQuantityLimits.TryGetValue(
 				heldObject.Value.ParentSheetIndex, out int max);
-			PropagatorMod.SMonitor.Log(
+			Log.T(
 				"\nPop: " + heldObject.Value.DisplayName
 				+ " at(" + TileLocation.X + " " + TileLocation.Y
 				+ ") val(" + Quality + ") qty (" + Quantity + "/" + max
 				+ ") age(" + daysToMature + "/" + defaultDaysToMature
-				+ " [+" + agingRate + "])",
-				LogLevel.Trace);
+				+ " [+" + agingRate + "])");
 
 			// Incorporate Gatherer's skill effects for extra production.
 			int extra = 0;
@@ -233,7 +230,7 @@ namespace BlueberryMushroomMachine
 			}
 			else
 			{
-				putObject(obj.getOne(), PropagatorData.MushroomGrowingRates[obj.ParentSheetIndex]);
+				putObject(obj.getOne(), Data.MushroomGrowingRates[obj.ParentSheetIndex]);
 				minutesUntilReady.Value = 999999;
 				Quantity = 1;
 			}
@@ -269,15 +266,13 @@ namespace BlueberryMushroomMachine
 		internal void TemporaryDayUpdate()
 		{
 			// Indexing inconsistencies with JA/CFR.
-			ParentSheetIndex = PropagatorData.PropagatorIndex;
+			ParentSheetIndex = Data.PropagatorIndex;
 
 			if (heldObject.Value == null)
 			{
-				PropagatorMod.SMonitor.Log(
-					"\nUpdate:"
+				Log.T("\nUpdate:"
 					+ " (" + TileLocation.X + " " + TileLocation.Y
-					+ ") is holding a null object.",
-					LogLevel.Trace);
+					+ ") is holding a null object.");
 				return;
 			}
 
@@ -285,15 +280,13 @@ namespace BlueberryMushroomMachine
 			// the user to pop out extra mushrooms.
 			ProduceExtra = true;
 
-			PropagatorData.MushroomQuantityLimits.TryGetValue(
+			Data.MushroomQuantityLimits.TryGetValue(
 				heldObject.Value.ParentSheetIndex, out int max);
-			PropagatorMod.SMonitor.Log(
-				"\nUpdate: " + heldObject.Value.DisplayName
+			Log.T("\nUpdate: " + heldObject.Value.DisplayName
 				+ " at(" + TileLocation.X + " " + TileLocation.Y
 				+ ") val(" + Quality + ") qty (" + Quantity + "/" + max
 				+ ") age(" + daysToMature + "/" + defaultDaysToMature
-				+ " [+" + agingRate + "])",
-				LogLevel.Trace);
+				+ " [+" + agingRate + "])");
 
 			checkForMaturity();
 		}
@@ -314,7 +307,7 @@ namespace BlueberryMushroomMachine
 		public new void checkForMaturity()
 		{
 			// Stop adding to the stack when the limit is reached.
-			PropagatorData.MushroomQuantityLimits.TryGetValue(
+			Data.MushroomQuantityLimits.TryGetValue(
 				heldObject.Value.ParentSheetIndex, out int max);
 			if (Quantity >= max)
 				return;
@@ -328,10 +321,8 @@ namespace BlueberryMushroomMachine
 			{
 				++Quantity;
 				daysToMature.Value = 0;
-				
-				PropagatorMod.SMonitor.Log(
-					"Matured to val(" + Quality + ") qty(" + Quantity + "/" + max + ")",
-					LogLevel.Trace);
+
+				Log.T("Matured to val(" + Quality + ") qty(" + Quantity + "/" + max + ")");
 			}
 		}
 
@@ -431,18 +422,18 @@ namespace BlueberryMushroomMachine
 			if (!probe && who != null)
 			{
 				bool flag = false;
-				if ((who.currentLocation is Cellar && PropagatorMod.SConfig.WorksInCellar)
-				|| (who.currentLocation is FarmCave && PropagatorMod.SConfig.WorksInFarmCave)
-				|| (who.currentLocation is BuildableGameLocation && PropagatorMod.SConfig.WorksInBuildings)
-				|| (who.currentLocation is FarmHouse && PropagatorMod.SConfig.WorksInFarmHouse)
-				|| (who.currentLocation.IsGreenhouse && PropagatorMod.SConfig.WorksInGreenhouse)
-				|| (who.currentLocation.IsOutdoors && PropagatorMod.SConfig.WorksOutdoors))
+				if ((who.currentLocation is Cellar && ModEntry.Instance.Config.WorksInCellar)
+				|| (who.currentLocation is FarmCave && ModEntry.Instance.Config.WorksInFarmCave)
+				|| (who.currentLocation is BuildableGameLocation && ModEntry.Instance.Config.WorksInBuildings)
+				|| (who.currentLocation is FarmHouse && ModEntry.Instance.Config.WorksInFarmHouse)
+				|| (who.currentLocation.IsGreenhouse && ModEntry.Instance.Config.WorksInGreenhouse)
+				|| (who.currentLocation.IsOutdoors && ModEntry.Instance.Config.WorksOutdoors))
 					flag = true;
 				
 				if (!flag)
 				{
 					// Ignore bad machine locations.
-					Game1.showRedMessage(PropagatorMod.i18n.Get("error.location"));
+					Game1.showRedMessage(ModEntry.Instance.i18n.Get("error.location"));
 					return false;
 				}
 			}
@@ -450,7 +441,7 @@ namespace BlueberryMushroomMachine
 			// Ignore Truffles.
 			if (!probe && dropIn.ParentSheetIndex.Equals(430))
 			{
-				Game1.showRedMessage(PropagatorMod.i18n.Get("error.truffle"));
+				Game1.showRedMessage(ModEntry.Instance.i18n.Get("error.truffle"));
 				return false;
 			}
 
@@ -459,7 +450,7 @@ namespace BlueberryMushroomMachine
 				return false;
 
 			// Ignore wrong items.
-			if (!PropagatorData.MushroomGrowingRates.TryGetValue(dropIn.ParentSheetIndex, out float rate))
+			if (!Data.MushroomGrowingRates.TryGetValue(dropIn.ParentSheetIndex, out float rate))
 				return false;
 
 			// Accept the deposited item.
@@ -521,7 +512,7 @@ namespace BlueberryMushroomMachine
 			// Draw the base sprite.
 			int whichMushroom = 0;
 			if (heldObject.Value != null)
-				PropagatorData.MushroomSourceRects.TryGetValue(
+				Data.MushroomSourceRects.TryGetValue(
 					heldObject.Value.ParentSheetIndex, out whichMushroom);
 			Vector2 vector2 = getScale() * 4f;
 			Vector2 local = Game1.GlobalToLocal(Game1.viewport, new Vector2( x * 64, y * 64 - 64));
@@ -544,7 +535,7 @@ namespace BlueberryMushroomMachine
 				return;
 
 			// Draw the held object overlay.
-			PropagatorData.MushroomQuantityLimits.TryGetValue(
+			Data.MushroomQuantityLimits.TryGetValue(
 				heldObject.Value.ParentSheetIndex, out int max);
 			int whichFrame = getWhichFrameForOverlay(
 				(int)daysToMature.Value, Quantity, max);
@@ -606,9 +597,8 @@ namespace BlueberryMushroomMachine
 			int.TryParse(additionalSaveData["heldObjectQuantity"], out int heldObjectQuantity);
 			loadHeldObject(heldObjectIndex, heldObjectQuality, heldObjectQuantity, days, produceExtra);
 
-			PropagatorMod.SMonitor.Log("Rebuilt " + Name + " (" + ParentSheetIndex + ") "
-				+ " at " + TileLocation.X + " " + TileLocation.Y,
-				LogLevel.Trace);
+			Log.T("Rebuilt " + Name + " (" + ParentSheetIndex + ") "
+				+ " at " + TileLocation.X + " " + TileLocation.Y);
 		}
 	}
 }

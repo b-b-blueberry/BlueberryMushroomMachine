@@ -3,26 +3,29 @@ using System.IO;
 
 namespace BlueberryMushroomMachine
 {
-	class PropagatorData
+	class Data
 	{
-		internal const string PropagatorName = "Propagator";
+		// Variables
+		internal static int PropagatorIndex
+			= 0;
+		internal static string ObjectData
+			= "{0}/0/-300/Crafting -9/{1}/true/true/0";
+		internal static string CraftingRecipeData
+			= "388 20 709 1/Home/{0}/true/null";
 
-		internal static readonly string MachinePath =
-			Path.Combine("assets", "propagator.png");
-		internal static readonly string OverlayPath =
-			Path.Combine("assets", "overlay.png");
-		internal static readonly string EventsPath =
-			Path.Combine("assets", "events.json");
+		// Constant values
+		internal const string PropagatorName
+			= "Propagator";
 
-		internal static int PropagatorIndex = 0;
-		internal static string ObjectData =
-			PropagatorMod.i18n.Get("machine.name")
-			+ "/0/-300/Crafting -9/" +
-			PropagatorMod.i18n.Get("machine.desc")
-			+ "/true/true/0";
-		internal static string CraftingRecipeData =
-			"388 20 709 1/Home/{0}/true/null";
-		
+		// Constant paths
+		internal static readonly string MachinePath
+			= Path.Combine("Assets", "propagator.png");
+		internal static readonly string OverlayPath
+			= Path.Combine("Assets", "overlay.png");
+		internal static readonly string EventsPath
+			= Path.Combine("Assets", "events.json");
+
+		// Constant dictionaries
 		internal static Dictionary<int, int> MushroomSourceRects =
 			new Dictionary<int, int> {
 				{257, 0},		// Morel
