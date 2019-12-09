@@ -15,8 +15,6 @@ using PyTK.CustomElementHandler;
  * 
  * todo:
  * 
- *		fix outdoors collisions
- *		
  *		look into automate integration
  * 
  */
@@ -25,7 +23,6 @@ namespace BlueberryMushroomMachine
 {
 	public class Propagator : Cask, ISaveElement
 	{
-
 		// Custom members
 		public int Quantity;
 		public bool ProduceExtra;
@@ -34,26 +31,23 @@ namespace BlueberryMushroomMachine
 		// Hidden members
 		public new readonly int defaultDaysToMature;
 
-		public Propagator()
+		public Propagator() : this(Vector2.Zero)
 		{
 		}
 		
 		public Propagator(Vector2 tileLocation)
 		{
-			defaultDaysToMature
-				= ModEntry.Instance.Helper.ReadConfig<Config>().MaximumDaysToMature;
-
-			// Take derived fields.
+			// Load derived fields.
 			IsRecipe = isRecipe;
 			TileLocation = tileLocation;
 			loadDefaultValues();
+			defaultDaysToMature
+				= ModEntry.Instance.Helper.ReadConfig<Config>().MaximumDaysToMature;
+			loadObjectData();
 
 			// Load custom fields.
 			Quantity = 0;
 			ProduceExtra = false;
-
-			// Load derived fields.
-			loadObjectData();
 		}
 
 		protected override string loadDisplayName()
@@ -82,6 +76,8 @@ namespace BlueberryMushroomMachine
 
 			Name = Data.PropagatorName;
 			ParentSheetIndex = Data.PropagatorIndex;
+
+			Log.D($"Loaded ({ParentSheetIndex}) {Name}");
 
 			string[] strArray1 = Data.ObjectData.Split('/');
 			displayName = strArray1[0];
@@ -128,11 +124,10 @@ namespace BlueberryMushroomMachine
 
 				Data.MushroomQuantityLimits.TryGetValue(
 					index, out int max);
-				Log.T("\nLoad: " + index
-					+ " at(" + TileLocation.X + " " + TileLocation.Y
-					+ ") val(" + quality + ") qty (" + quantity + "/" + max
-					+ ") age(" + daysToMature + "/" + defaultDaysToMature
-					+ " [+" + agingRate + "])");
+				Log.T($"Load: {index}"
+					+ $" at({TileLocation.X}/{TileLocation.Y})"
+					+ $" qty({Quantity}/{max})"
+					+ $" age+{agingRate}=({daysToMature}/{defaultDaysToMature})");
 
 			}
 		}
@@ -201,12 +196,10 @@ namespace BlueberryMushroomMachine
 		{
 			Data.MushroomQuantityLimits.TryGetValue(
 				heldObject.Value.ParentSheetIndex, out int max);
-			Log.T(
-				"\nPop: " + heldObject.Value.DisplayName
-				+ " at(" + TileLocation.X + " " + TileLocation.Y
-				+ ") val(" + Quality + ") qty (" + Quantity + "/" + max
-				+ ") age(" + daysToMature + "/" + defaultDaysToMature
-				+ " [+" + agingRate + "])");
+			Log.T($"Pop: {heldObject.Value.DisplayName}"
+				+ $" at({TileLocation.X}/{TileLocation.Y})"
+				+ $" qty({Quantity}/{max})"
+				+ $" age+{agingRate}=({daysToMature}/{defaultDaysToMature})");
 
 			// Incorporate Gatherer's skill effects for extra production.
 			int extra = 0;
@@ -269,12 +262,7 @@ namespace BlueberryMushroomMachine
 			ParentSheetIndex = Data.PropagatorIndex;
 
 			if (heldObject.Value == null)
-			{
-				Log.T("\nUpdate:"
-					+ " (" + TileLocation.X + " " + TileLocation.Y
-					+ ") is holding a null object.");
 				return;
-			}
 
 			// Mark the machine as having grown overnight, allowing
 			// the user to pop out extra mushrooms.
@@ -282,11 +270,10 @@ namespace BlueberryMushroomMachine
 
 			Data.MushroomQuantityLimits.TryGetValue(
 				heldObject.Value.ParentSheetIndex, out int max);
-			Log.T("\nUpdate: " + heldObject.Value.DisplayName
-				+ " at(" + TileLocation.X + " " + TileLocation.Y
-				+ ") val(" + Quality + ") qty (" + Quantity + "/" + max
-				+ ") age(" + daysToMature + "/" + defaultDaysToMature
-				+ " [+" + agingRate + "])");
+			Log.T($"Update: {heldObject.Value.DisplayName}"
+				+ $" at({TileLocation.X}/{TileLocation.Y})"
+				+ $" qty({Quantity}/{max})"
+				+ $" age+{agingRate}=({daysToMature}/{defaultDaysToMature})");
 
 			checkForMaturity();
 		}
@@ -322,7 +309,7 @@ namespace BlueberryMushroomMachine
 				++Quantity;
 				daysToMature.Value = 0;
 
-				Log.T("Matured to val(" + Quality + ") qty(" + Quantity + "/" + max + ")");
+				Log.T($"Matured to qty({Quantity}/{max})");
 			}
 		}
 
@@ -529,7 +516,7 @@ namespace BlueberryMushroomMachine
 					0f, 
 					Vector2.Zero,
 					SpriteEffects.None,
-					Math.Max(0.0f, ((y + 1) * 64 - 24) / 10000.0f) + x * 1.0f / 10000.0f);
+					Math.Max(0.0f, ((y + 1) * 64 - 24) / 10000f) + (Game1.currentLocation.IsOutdoors ? 0f : x * 1f / 10000f));
 
 			if (heldObject.Value == null)
 				return;
@@ -548,12 +535,12 @@ namespace BlueberryMushroomMachine
 					0f,
 					Vector2.Zero,
 					SpriteEffects.None,
-					Math.Max(0.0f, ((y + 1) * 64 - 24) / 10000f) + x * 1f / 10000f + 1f / 10000f);
+					Math.Max(0.0f, ((y + 1) * 64 - 24) / 10000f) + (Game1.currentLocation.IsOutdoors ? 0f : x * 1f / 10000f) + 1f / 10000f);
 		}
 
 		public override Item getOne()
 		{
-			return new Propagator();
+			return new Propagator(Vector2.Zero);
 		}
 
 		/* PyTK ISaveElement */
@@ -583,9 +570,6 @@ namespace BlueberryMushroomMachine
 
 		public void rebuild(Dictionary<string, string> additionalSaveData, object replacement)
 		{
-			loadDefaultValues();
-			loadObjectData();
-			
 			float.TryParse(additionalSaveData["tileLocationX"], out float x);
 			float.TryParse(additionalSaveData["tileLocationY"], out float y);
 			TileLocation = new Vector2(x, y);
@@ -597,8 +581,12 @@ namespace BlueberryMushroomMachine
 			int.TryParse(additionalSaveData["heldObjectQuantity"], out int heldObjectQuantity);
 			loadHeldObject(heldObjectIndex, heldObjectQuality, heldObjectQuantity, days, produceExtra);
 
-			Log.T("Rebuilt " + Name + " (" + ParentSheetIndex + ") "
-				+ " at " + TileLocation.X + " " + TileLocation.Y);
+			loadDefaultValues();
+			loadObjectData();
+
+			var index = Game1.player.getIndexOfInventoryItem(this);
+
+			Log.D($"Rebuilt {Name} ({ParentSheetIndex}) at({TileLocation.X}/{TileLocation.Y})");
 		}
 	}
 }

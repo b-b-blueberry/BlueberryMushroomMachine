@@ -27,6 +27,10 @@ namespace BlueberryMushroomMachine.Editors
 
 				var original = dest.Data;
 				var texture = new Texture2D(Game1.graphics.GraphicsDevice, original.Width, destRect.Bottom);
+
+				Log.T($"Original: {original.Width}x{original.Height}");
+				Log.T($"Expanded: {texture.Width}x{texture.Height}");
+
 				dest.ReplaceWith(texture);
 				dest.PatchImage(original);
 			}

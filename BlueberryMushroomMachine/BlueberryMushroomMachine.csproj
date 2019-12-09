@@ -48,6 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\IJsonAssetsAPI.cs" />
     <Compile Include="Core\Log.cs" />
     <Compile Include="Editors\EventsEditor.cs" />
     <Compile Include="Core\Config.cs" />

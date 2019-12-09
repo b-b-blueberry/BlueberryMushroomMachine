@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-using StardewModdingAPI;
+﻿using StardewModdingAPI;
 
 namespace BlueberryMushroomMachine.Editors
 {
@@ -14,7 +12,10 @@ namespace BlueberryMushroomMachine.Editors
 		{
 			// Inject crafting recipe data using custom appended index as the result.
 			var data = asset.AsDictionary<string, string>().Data;
-			data.Add(Data.PropagatorName, Data.CraftingRecipeData);
+			if (!data.ContainsKey(Data.PropagatorName))
+				data.Add(Data.PropagatorName, Data.CraftingRecipeData);
+
+			Log.D($"Recipe injected: {data[Data.PropagatorName]}");
 		}
 	}
 }
