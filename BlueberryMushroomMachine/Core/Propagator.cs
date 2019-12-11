@@ -77,7 +77,7 @@ namespace BlueberryMushroomMachine
 			Name = Data.PropagatorName;
 			ParentSheetIndex = Data.PropagatorIndex;
 
-			Log.D($"Loaded ({ParentSheetIndex}) {Name}");
+			Log.T($"Loaded {Name} ({ParentSheetIndex})");
 
 			string[] strArray1 = Data.ObjectData.Split('/');
 			displayName = strArray1[0];
@@ -586,7 +586,7 @@ namespace BlueberryMushroomMachine
 
 			var index = Game1.player.getIndexOfInventoryItem(this);
 
-			Log.D($"Rebuilt {Name} ({ParentSheetIndex}) at({TileLocation.X}/{TileLocation.Y})");
+			Log.T($"Rebuilt {Name} ({ParentSheetIndex}) at({TileLocation.X}/{TileLocation.Y})");
 		}
 	}
 }

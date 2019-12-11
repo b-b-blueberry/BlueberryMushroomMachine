@@ -20,11 +20,9 @@ namespace BlueberryMushroomMachine.Editors
 			// Pre-Demetrius-event dialogue.
 			if (asset.AssetNameEquals(@"Characters/Dialogue/Robin"))
 			{
-				var json = ModEntry.Instance.Helper.Content.Load<IDictionary<string, string> >
-					(Data.EventsPath);
-
 				var key = "event.4637.0000.0000";
-				data.Add(key, ModEntry.Instance.i18n.Get(key));
+				if (!data.ContainsKey(key))
+					data.Add(key, ModEntry.Instance.i18n.Get(key));
 			}
 
 			// Event 0001: Farm, Demetrius
@@ -44,11 +42,12 @@ namespace BlueberryMushroomMachine.Editors
 								&& Game1.player.caveChoice.Value != 2)
 								return;
 
-							data.Add(key, string.Format(json[key],
-								ModEntry.Instance.i18n.Get("event.4637.0001.0000"),
-								ModEntry.Instance.i18n.Get("event.4637.0001.0001"),
-								ModEntry.Instance.i18n.Get("event.4637.0001.0002"),
-								ModEntry.Instance.i18n.Get("event.4637.0001.0003")));
+							if (!data.ContainsKey(key))
+								data.Add(key, string.Format(json[key],
+									ModEntry.Instance.i18n.Get("event.4637.0001.0000"),
+									ModEntry.Instance.i18n.Get("event.4637.0001.0001"),
+									ModEntry.Instance.i18n.Get("event.4637.0001.0002"),
+									ModEntry.Instance.i18n.Get("event.4637.0001.0003")));
 						}
 					}
 				}

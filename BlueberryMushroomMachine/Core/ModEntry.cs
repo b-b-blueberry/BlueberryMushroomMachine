@@ -26,6 +26,10 @@ namespace BlueberryMushroomMachine
 			Instance = this;
 			Config = helper.ReadConfig<Config>();
 
+			Log.I("Development spam is on, see TRACE for debugging info.");
+			Log.I("Post a complete log via HTTPS://LOG.SMAPI.IO/ on the Nexus page if you hit any errors."
+				+ " Thank you!");
+
 			// Debug events.
 			if (Config.Debugging)
 			{
@@ -37,7 +41,7 @@ namespace BlueberryMushroomMachine
 			Helper.Events.GameLoop.DayStarted += OnDayStarted;
 
 			// Harmony setup.
-			var harmony = HarmonyInstance.Create("blueberry.MushroomPropagator");
+			var harmony = HarmonyInstance.Create($"{Data.AuthorName}.{Data.PackageName}");
 			
 			harmony.Patch(
 				original: AccessTools.Method(typeof(CraftingRecipe), nameof(CraftingRecipe.createItem)),
@@ -52,8 +56,11 @@ namespace BlueberryMushroomMachine
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
 		{
 			// Identify the tilesheet index for the machine, and then continue
-			// to inject data into multiple other assets if successful.
-			AddObjectData();
+			// to inject relevant data into multiple other assets if successful.
+			if (!Game1.bigCraftablesInformation.ContainsKey(Data.PropagatorIndex) || Data.PropagatorIndex == 0)
+			{
+				AddObjectData();
+			}
 		}
 		
 		private void OnDayStarted(object sender, DayStartedEventArgs e)
@@ -71,14 +78,39 @@ namespace BlueberryMushroomMachine
 
 			Log.T($"Recipe Cheat: {Config.RecipeAlwaysAvailable.ToString()}");
 
+			// TEMPORARY FIX: Manually rebuild each Propagator in the user's inventory.
+			// PyTK ~1.12.13.unofficial seemingly rebuilds inventory objects at ReturnedToTitle,
+			// so inventory objects are only rebuilt after the save is reloaded for every session.
+			var items = Game1.player.Items;
+			for (var i = items.Count-1; i > 0; --i)
+			{
+				if (items[i] != null)
+				{
+					if (items[i].Name.StartsWith($"PyTK|Item|{Data.PackageName}.{Data.PropagatorName}"))
+					{
+						Log.T($"Found {items[i].Name}.");
+						Log.T($"Found a broken {Data.PropagatorName} in {Game1.player.Name}'s inventory slot {i}"
+							+", rebuilding manually.");
+						
+						var stack = items[i].Stack;
+						Game1.player.removeItemFromInventory(items[i]);
+						Game1.player.addItemToInventory(new Propagator() { Stack = stack }, i);
+					}
+				}
+			}
+
 			// TEMPORARY FIX: Manually DayUpdate each Propagator.
 			// PyTK 1.9.11+ rebuilds objects at DayEnding, so Cask.DayUpdate is never called.
 			// Also fixes 0-index objects from PyTK rebuilding before the new index is generated.
 			foreach (var loc in Game1.locations)
 			{
-				var objs = loc.Objects.Values.Where(o => o.Name.Equals(Data.PropagatorName));
-				foreach (Propagator obj in objs)
-					obj.TemporaryDayUpdate();
+				if (loc.Objects.Values.Count() > 0)
+				{
+					var objects = loc.Objects.Values.Where(o => o.Name.Equals(Data.PropagatorName));
+					foreach (Propagator obj in objects)
+						if (obj != null)
+							obj.TemporaryDayUpdate();
+				}
 			}
 		}
 
@@ -101,24 +133,22 @@ namespace BlueberryMushroomMachine
 
 		private void AddObjectData()
 		{
-			//if (!Game1.bigCraftablesInformation.ContainsKey(Data.PropagatorIndex))
-			//{
-				// Identify the index in bigCraftables for the machine.
-				Helper.Content.AssetEditors.Add(new Editors.BigCraftablesInfoEditor());
+			Log.T($"Injecting object data (current index: {Data.PropagatorIndex}).");
 
-				// Edit all assets that rely on the generated object index.
+			// Identify the index in bigCraftables for the machine.
+			Helper.Content.AssetEditors.Add(new Editors.BigCraftablesInfoEditor());
 
-				// These will likely input a bad index first, though BigCraftablesInfoEditor.Edit()
-				// invalidates the cache once it finishes operations to reassign data with an appropriate index.
+			// Edit all assets that rely on the generated object index.
 
-				// Inject recipe into the Craftables data sheet.
-				ModEntry.Instance.Helper.Content.AssetEditors.Add(new Editors.CraftingRecipesEditor());
-				// Inject sprite into the Craftables tilesheet.
-				ModEntry.Instance.Helper.Content.AssetEditors.Add(new Editors.BigCraftablesTilesheetEditor());
-			//}
+			// These can potentially input a bad index first, though BigCraftablesInfoEditor.Edit()
+			// invalidates the cache once it finishes operations to reassign data with an appropriate index.
 
-			// Add Demetrius' event.
-			ModEntry.Instance.Helper.Content.AssetEditors.Add(new Editors.EventsEditor());
+			// Inject recipe into the Craftables data sheet.
+			Helper.Content.AssetEditors.Add(new Editors.CraftingRecipesEditor());
+			// Inject sprite into the Craftables tilesheet.
+			Helper.Content.AssetEditors.Add(new Editors.BigCraftablesTilesheetEditor());
+			// Inject Demetrius' event.
+			Helper.Content.AssetEditors.Add(new Editors.EventsEditor());
 		}
 
 		#endregion
@@ -177,7 +207,7 @@ namespace BlueberryMushroomMachine
 			}
 			catch (Exception e)
 			{
-				Log.E($"MushroomPropagator failed in" +
+				Log.E($"{Data.AuthorName}.{Data.PackageName} failed in" +
 					$"{nameof(CraftingPagePatch)}.{nameof(Prefix)}" +
 					$"\n{e}");
 				return true;

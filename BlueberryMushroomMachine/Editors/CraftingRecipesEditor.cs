@@ -15,7 +15,7 @@ namespace BlueberryMushroomMachine.Editors
 			if (!data.ContainsKey(Data.PropagatorName))
 				data.Add(Data.PropagatorName, Data.CraftingRecipeData);
 
-			Log.D($"Recipe injected: {data[Data.PropagatorName]}");
+			Log.T($"Recipe injected: {data[Data.PropagatorName]}");
 		}
 	}
 }

@@ -14,6 +14,10 @@ namespace BlueberryMushroomMachine
 			= "388 20 709 1/Home/{0}/true/null";
 
 		// Constant values
+		internal const string AuthorName
+			= "blueberry";
+		internal const string PackageName
+			= "BlueberryMushroomMachine";
 		internal const string PropagatorName
 			= "Propagator";
 

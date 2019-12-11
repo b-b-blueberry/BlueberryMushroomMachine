@@ -22,19 +22,21 @@ namespace BlueberryMushroomMachine.Editors
 			index += indicesPerRow - (index % indicesPerRow);	// by not expanding the tilesheet
 			Data.PropagatorIndex = index;                       // to be 4096px high.
 
-			Log.D($"Object indexed:  {Data.PropagatorIndex}");
+			Log.T($"Object indexed:  {Data.PropagatorIndex}");
 
 			// Inject custom object data with appending index.
 			Data.ObjectData = string.Format(Data.ObjectData,
 				ModEntry.Instance.i18n.Get("machine.name"),
 				ModEntry.Instance.i18n.Get("machine.desc"));
-			data.Add(Data.PropagatorIndex, Data.ObjectData);
+
+			if (!data.ContainsKey(Data.PropagatorIndex))
+				data.Add(Data.PropagatorIndex, Data.ObjectData);
 
 			// Update not-yet-injected crafting recipe data to match.
 			Data.CraftingRecipeData = string.Format(
 				Data.CraftingRecipeData, Data.PropagatorIndex);
 
-			Log.D($"Object injected: {data[Data.PropagatorIndex]}");
+			Log.T($"Object injected: {data[Data.PropagatorIndex]}");
 
 			// Invalidate cache of possibly-badly-indexed data.
 			ModEntry.Instance.Helper.Content.InvalidateCache(@"Data/Events/Farm");
