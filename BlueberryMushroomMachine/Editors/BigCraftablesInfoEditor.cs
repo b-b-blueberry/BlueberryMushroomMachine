@@ -18,9 +18,8 @@ namespace BlueberryMushroomMachine.Editors
 
 			// Slide into a free tilesheet index.
 			var indicesPerRow = Game1.bigCraftableSpriteSheet.Width / 16;
-			var index = data.Keys.Where(id => id < 4000).Max();	// Avoids JA incompatibilities
-			index += indicesPerRow - (index % indicesPerRow);	// by not expanding the tilesheet
-			Data.PropagatorIndex = index;                       // to be 4096px high.
+			var index = data.Keys.Where(id => id < 300).Max()+1;	// Avoids JA/CFR incompatibilities.
+			Data.PropagatorIndex = index;
 
 			Log.T($"Object indexed:  {Data.PropagatorIndex}");
 
@@ -33,10 +32,10 @@ namespace BlueberryMushroomMachine.Editors
 				data.Add(Data.PropagatorIndex, Data.ObjectData);
 
 			// Update not-yet-injected crafting recipe data to match.
-			Data.CraftingRecipeData = string.Format(
-				Data.CraftingRecipeData, Data.PropagatorIndex);
+			Data.CraftingRecipeData = string.Format(Data.CraftingRecipeData,
+				Data.PropagatorIndex);
 
-			Log.T($"Object injected: {data[Data.PropagatorIndex]}");
+			Log.T($"Object injected: \"{Data.PropagatorIndex}\": \"{data[Data.PropagatorIndex]}\"");
 
 			// Invalidate cache of possibly-badly-indexed data.
 			ModEntry.Instance.Helper.Content.InvalidateCache(@"Data/Events/Farm");

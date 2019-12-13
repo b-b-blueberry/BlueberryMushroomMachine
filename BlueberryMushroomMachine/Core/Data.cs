@@ -18,8 +18,11 @@ namespace BlueberryMushroomMachine
 			= "blueberry";
 		internal const string PackageName
 			= "BlueberryMushroomMachine";
-		internal const string PropagatorName
+		internal const string PropagatorDefaultDisplayName
 			= "Propagator";
+
+		internal static readonly string PropagatorName
+			= $"{PackageName}.{PropagatorDefaultDisplayName}";
 
 		// Constant paths
 		internal static readonly string MachinePath

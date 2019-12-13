@@ -86,7 +86,8 @@ namespace BlueberryMushroomMachine
 			{
 				if (items[i] != null)
 				{
-					if (items[i].Name.StartsWith($"PyTK|Item|{Data.PackageName}.{Data.PropagatorName}"))
+					if (items[i].Name.StartsWith($"PyTK|Item|{Data.PackageName}")
+						&& items[i].Name.Contains($"{Data.PropagatorDefaultDisplayName}"))
 					{
 						Log.T($"Found {items[i].Name}.");
 						Log.T($"Found a broken {Data.PropagatorName} in {Game1.player.Name}'s inventory slot {i}"
@@ -108,8 +109,14 @@ namespace BlueberryMushroomMachine
 				{
 					var objects = loc.Objects.Values.Where(o => o.Name.Equals(Data.PropagatorName));
 					foreach (Propagator obj in objects)
+					{
 						if (obj != null)
+						{
+							//if (obj.ParentSheetIndex != Data.PropagatorIndex)
+								//obj.ParentSheetIndex = Data.PropagatorIndex;
 							obj.TemporaryDayUpdate();
+						}
+					}
 				}
 			}
 		}
@@ -123,7 +130,7 @@ namespace BlueberryMushroomMachine
 			{
 				if (keyPressed.ToSButton().Equals(Config.GivePropagatorKey))
 				{
-					Log.T($"{Game1.player.Name} cheated in a machine.");
+					Log.T($"{Game1.player.Name} spawned in a machine.");
 
 					Propagator prop = new Propagator(Game1.player.getTileLocation());
 					Game1.player.addItemByMenuIfNecessary(prop);
@@ -162,7 +169,8 @@ namespace BlueberryMushroomMachine
 		{
 			// Intercept machine crafts with a Propagator subclass,
 			// rather than a generic nonfunctional craftable.
-			if (__instance.name.Equals(Data.PropagatorName))
+			var name = ModEntry.Instance.i18n.Get("machine.name");
+			if (__instance.name.Equals(name))
 				__result = new Propagator(Game1.player.getTileLocation());
 		}
 	}
@@ -179,11 +187,12 @@ namespace BlueberryMushroomMachine
 				// Fetch an instance of any clicked-on craftable in the crafting menu.
 				Item tempItem = ___pagesOfCraftingRecipes[___currentCraftingPage][c]
 					.createItem();
-
+				
 				// Fall through the prefix for any craftables other than the Propagator.
-				if (!tempItem.Name.Equals(Data.PropagatorName))
+				var name = ModEntry.Instance.i18n.Get("machine.name");
+				if (!tempItem.Name.Equals(name))
 					return true;
-
+				
 				// Behaviours as from base method.
 				if (___heldItem == null)
 				{
