@@ -64,11 +64,11 @@ namespace BlueberryMushroomMachine
 		{
 			loadOverlayTexture();
 
-			Name = Const.PropagatorName;
+			Name = Const.PropagatorUniqueId;
 			ParentSheetIndex = Data.PropagatorIndex;
-			
+			DisplayName = loadDisplayName();
+
 			var strArray1 = Data.ObjectData.Split('/');
-			displayName = strArray1[0];
 			price.Value = Convert.ToInt32(strArray1[1]);
 			edibility.Value = Convert.ToInt32(strArray1[2]);
 			var strArray2 = strArray1[3].Split(' ');

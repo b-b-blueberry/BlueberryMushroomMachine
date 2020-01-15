@@ -22,6 +22,9 @@ namespace BlueberryMushroomMachine.Editors
 
 		public void Edit<T>(IAssetData asset)
 		{
+			Log.D($"Editing {asset.AssetName}.",
+				_isDebugging);
+
 			// Expand the base tilesheet if needed.
 			var src = ModEntry.Instance.Helper.Content.Load<Texture2D>(Const.MachinePath);
 			var dest = asset.AsImage();

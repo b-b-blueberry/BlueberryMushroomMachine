@@ -6,6 +6,13 @@ namespace BlueberryMushroomMachine.Editors
 {
 	internal class EventsEditor : IAssetEditor
 	{
+		private readonly bool _isDebugging;
+
+		public EventsEditor()
+		{
+			_isDebugging = ModEntry.Instance.Config.DebugMode;
+		}
+
 		public bool CanEdit<T>(IAssetInfo asset)
 		{
 			return asset.AssetNameEquals(@"Characters/Dialogue/Robin")
@@ -14,6 +21,9 @@ namespace BlueberryMushroomMachine.Editors
 
 		public void Edit<T>(IAssetData asset)
 		{
+			Log.D($"Editing {asset.AssetName}.",
+				_isDebugging);
+
 			var data = asset.AsDictionary<string, string>().Data;
 
 			// Event 0000: Robin

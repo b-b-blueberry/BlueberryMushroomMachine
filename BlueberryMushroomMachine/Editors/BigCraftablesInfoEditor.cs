@@ -14,11 +14,14 @@ namespace BlueberryMushroomMachine.Editors
 
 		public bool CanEdit<T>(IAssetInfo asset)
 		{
-			return asset.AssetNameEquals(@"Const/BigCraftablesInformation");
+			return asset.AssetNameEquals(@"Data/BigCraftablesInformation");
 		}
 
 		public void Edit<T>(IAssetData asset)
 		{
+			Log.D($"Editing {asset.AssetName}.",
+				_isDebugging);
+
 			var data = asset.AsDictionary<int, string>().Data;
 
 			// Slide into a free tilesheet index.
@@ -44,8 +47,8 @@ namespace BlueberryMushroomMachine.Editors
 				_isDebugging);
 
 			// Invalidate cache of possibly-badly-indexed data.
-			ModEntry.Instance.Helper.Content.InvalidateCache(@"Const/Events/Farm");
-			ModEntry.Instance.Helper.Content.InvalidateCache(@"Const/CraftingRecipes");
+			ModEntry.Instance.Helper.Content.InvalidateCache(@"Data/Events/Farm");
+			ModEntry.Instance.Helper.Content.InvalidateCache(@"Data/CraftingRecipes");
 			ModEntry.Instance.Helper.Content.InvalidateCache(@"Tilesheets/Craftables");
 		}
 	}

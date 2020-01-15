@@ -2,7 +2,7 @@
 
 namespace BlueberryMushroomMachine
 {
-	internal class Config
+	public class Config
 	{
 		public int MaximumDaysToMature { get; set; } = 4;
 

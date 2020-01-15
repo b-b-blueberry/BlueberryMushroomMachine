@@ -32,32 +32,43 @@ namespace BlueberryMushroomMachine
 
 			// Harmony setup.
 			var harmony = HarmonyInstance.Create($"{Const.AuthorName}.{Const.PackageName}");
-			
+
+			Log.D("Harmony patching methods:"
+			      + "\nCraftingPage.performHoverAction:Postfix:void"
+			      + "\nCraftingPage.clickCraftingRecipe:Prefix:bool"
+				  + "\nCraftingRecipe.createItem:Postfix:void",
+				Config.DebugMode);
+
 			harmony.Patch(
-				original: AccessTools.Method(typeof(CraftingRecipe), nameof(CraftingRecipe.createItem)),
-				postfix: new HarmonyMethod(typeof(CraftingRecipePatch), nameof(CraftingRecipePatch.Postfix)));
+				original: AccessTools.Method(typeof(CraftingPage), "performHoverAction"),
+				postfix: new HarmonyMethod(typeof(RecipeHoverActionPatch), nameof(RecipeHoverActionPatch.Postfix)));
 			harmony.Patch(
 				original: AccessTools.Method(typeof(CraftingPage), "clickCraftingRecipe"),
-				prefix: new HarmonyMethod(typeof(CraftingPagePatch), nameof(CraftingPagePatch.Prefix)));
+				prefix: new HarmonyMethod(typeof(ClickCraftingRecipePatch), nameof(ClickCraftingRecipePatch.Prefix)));
+			harmony.Patch(
+				original: AccessTools.Method(typeof(CraftingRecipe), "createItem"),
+				postfix: new HarmonyMethod(typeof(CreateRecipeItemPatch), nameof(CreateRecipeItemPatch.Postfix)));
 		}
 
 		#region Game Events
 
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
 		{
-			Log.I("See log file TRACE for Mushroom Machine state info.");
-			Log.I("Post a complete log via HTTPS://LOG.SMAPI.IO/ on the Nexus page if you hit any errors."
-			      + " Thank you!");
+			Log.I("See log file TRACE for Mushroom Machine state info." 
+			      + " Post a complete log via HTTPS://LOG.SMAPI.IO/ on the Nexus page with any issues."
+			      + " Thanks!");
 
-			Log.D($"Recipe Cheat: {Config.RecipeAlwaysAvailable.ToString()}",
-				Config.DebugMode);
-			Log.D($"Recipe Cheat: {Config.RecipeAlwaysAvailable.ToString()}",
+			Log.D("Works in locations:"
+			      + $" {Config.WorksInCellar} {Config.WorksInFarmCave} {Config.WorksInBuildings}"
+				  + $" {Config.WorksInFarmHouse} {Config.WorksInGreenhouse} {Config.WorksOutdoors}"
+				  + $"\nMushroom Cave: {Config.RecipeAlwaysAvailable}"
+				  + $"\nRecipe Cheat:  {Config.RecipeAlwaysAvailable}"
+				  + $"\nDebug Mode:    {Config.DebugMode}",
 				Config.DebugMode);
 
 			// Identify the tilesheet index for the machine, and then continue
 			// to inject relevant data into multiple other assets if successful.
-			if (!Game1.bigCraftablesInformation.ContainsKey(Data.PropagatorIndex) || Data.PropagatorIndex == 0)
-				AddObjectData();
+			AddObjectData();
 		}
 		
 		private void OnDayStarted(object sender, DayStartedEventArgs e)
@@ -68,8 +79,8 @@ namespace BlueberryMushroomMachine
 
 			// Add the Propagator crafting recipe if the cheat is enabled.
 			if (Config.RecipeAlwaysAvailable)
-				if (!Game1.player.craftingRecipes.ContainsKey(Const.PropagatorName))
-					Game1.player.craftingRecipes.Add(Const.PropagatorName, 0);
+				if (!Game1.player.craftingRecipes.ContainsKey(Const.PropagatorUniqueId))
+					Game1.player.craftingRecipes.Add(Const.PropagatorUniqueId, 0);
 
 			// TEMPORARY FIX: Manually rebuild each Propagator in the user's inventory.
 			// PyTK ~1.12.13.unofficial seemingly rebuilds inventory objects at ReturnedToTitle,
@@ -79,7 +90,7 @@ namespace BlueberryMushroomMachine
 			{
 				if (items[i] == null
 				    || !items[i].Name.StartsWith($"PyTK|Item|{Const.PackageName}") 
-				    || !items[i].Name.Contains($"{Const.PropagatorDefaultDisplayName}"))
+				    || !items[i].Name.Contains($"{Const.PropagatorName}"))
 					continue;
 				
 				Log.D($"Found a broken {items[i].Name} in {Game1.player.Name}'s inventory slot {i}"
@@ -98,7 +109,7 @@ namespace BlueberryMushroomMachine
 			{
 				if (!location.Objects.Values.Any())
 					continue;
-				var objects = location.Objects.Values.Where(o => o.Name.Equals(Const.PropagatorName));
+				var objects = location.Objects.Values.Where(o => o.Name.Equals(Const.PropagatorUniqueId));
 				foreach (var obj in objects)
 					((Propagator)obj).TemporaryDayUpdate();
 			}
@@ -116,19 +127,20 @@ namespace BlueberryMushroomMachine
 			{
 				var prop = new Propagator(Game1.player.getTileLocation());
 				Game1.player.addItemByMenuIfNecessary(prop);
-				Log.D($"{Game1.player.Name} spawned in a {Const.PropagatorName} ({prop.DisplayName}).",
+				Log.D($"{Game1.player.Name} spawned in a {Const.PropagatorUniqueId} ({prop.DisplayName}).",
 					Config.DebugMode);
 			}
 		}
 
 		private void AddObjectData()
 		{
-			Log.T($"Injecting object data (current index: {Data.PropagatorIndex}).");
+			Log.D("Injecting object data.",
+				Config.DebugMode);
 
 			// Identify the index in bigCraftables for the machine.
 			Helper.Content.AssetEditors.Add(new Editors.BigCraftablesInfoEditor());
 
-			// Edit all assets that rely on the generated object index.
+			// Edit all assets that rely on the generated object index:
 
 			// These can potentially input a bad index first, though BigCraftablesInfoEditor.Edit()
 			// invalidates the cache once it finishes operations to reassign data with an appropriate index.
@@ -146,19 +158,18 @@ namespace BlueberryMushroomMachine
 
 	#region Harmony Patches
 
-	public class CraftingRecipePatch
+	public class RecipeHoverActionPatch
 	{
-		internal static void Postfix(CraftingRecipe __instance, Item __result)
+		internal static void Postfix(CraftingRecipe ___hoverRecipe, int x, int y)
 		{
-			// Intercept machine crafts with a Propagator subclass,
-			// rather than a generic nonfunctional craftable.
-			var name = ModEntry.Instance.i18n.Get("machine.name");
-			if (__instance.name.Equals(name))
-				__result = new Propagator(Game1.player.getTileLocation());
+			if (___hoverRecipe == null)
+				return;
+			if (___hoverRecipe.name.Equals(Const.PropagatorName))
+				___hoverRecipe.DisplayName = ModEntry.Instance.i18n.Get("machine.name");
 		}
 	}
 
-	public class CraftingPagePatch
+	public class ClickCraftingRecipePatch
 	{
 		internal static bool Prefix(
 			List<Dictionary<ClickableTextureComponent, CraftingRecipe>> ___pagesOfCraftingRecipes,
@@ -170,12 +181,11 @@ namespace BlueberryMushroomMachine
 				// Fetch an instance of any clicked-on craftable in the crafting menu.
 				var tempItem = ___pagesOfCraftingRecipes[___currentCraftingPage][c]
 					.createItem();
-				
+
 				// Fall through the prefix for any craftables other than the Propagator.
-				var name = ModEntry.Instance.i18n.Get("machine.name");
-				if (!tempItem.Name.Equals(name))
+				if (!tempItem.Name.Equals(ModEntry.Instance.i18n.Get("machine.name")))
 					return true;
-				
+
 				// Behaviours as from base method.
 				if (___heldItem == null)
 				{
@@ -200,10 +210,21 @@ namespace BlueberryMushroomMachine
 			catch (Exception e)
 			{
 				Log.E($"{Const.AuthorName}.{Const.PackageName} failed in"
-					+ $"{nameof(CraftingPagePatch)}.{nameof(Prefix)}"
-					+ $"\n{e}");
+				      + $" {nameof(ClickCraftingRecipePatch)}.{nameof(Prefix)}"
+				      + $"\n{e}");
 				return true;
 			}
+		}
+	}
+
+	public class CreateRecipeItemPatch
+	{
+		internal static void Postfix(CraftingRecipe __instance, Item __result)
+		{
+			// Intercept machine crafts with a Propagator subclass,
+			// rather than a generic nonfunctional craftable.
+			if (__instance.name == Const.PropagatorName)
+				__result = new Propagator(Game1.player.getTileLocation());
 		}
 	}
 
