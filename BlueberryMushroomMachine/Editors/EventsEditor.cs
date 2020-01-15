@@ -4,12 +4,12 @@ using StardewModdingAPI;
 
 namespace BlueberryMushroomMachine.Editors
 {
-	class EventsEditor : IAssetEditor
+	internal class EventsEditor : IAssetEditor
 	{
 		public bool CanEdit<T>(IAssetInfo asset)
 		{
 			return asset.AssetNameEquals(@"Characters/Dialogue/Robin")
-				|| asset.AssetNameEquals(@"Data/Events/Farm");
+				|| asset.AssetNameEquals(@"Const/Events/Farm");
 		}
 
 		public void Edit<T>(IAssetData asset)
@@ -20,17 +20,17 @@ namespace BlueberryMushroomMachine.Editors
 			// Pre-Demetrius-event dialogue.
 			if (asset.AssetNameEquals(@"Characters/Dialogue/Robin"))
 			{
-				var key = "event.4637.0000.0000";
+				const string key = "event.4637.0000.0000";
 				if (!data.ContainsKey(key))
 					data.Add(key, ModEntry.Instance.i18n.Get(key));
 			}
 
 			// Event 0001: Farm, Demetrius
 			// Receive Propagator recipe after house upgrade level 3.
-			if (asset.AssetNameEquals(@"Data/Events/Farm"))
+			if (asset.AssetNameEquals(@"Const/Events/Farm"))
 			{
-				var json = ModEntry.Instance.Helper.Content.Load<IDictionary<string, string> >
-					(Data.EventsPath);
+				var json = ModEntry.Instance.Helper.Content.Load<IDictionary<string, string>>
+					(Const.EventsPath);
 
 				foreach (var key in json.Keys)
 				{

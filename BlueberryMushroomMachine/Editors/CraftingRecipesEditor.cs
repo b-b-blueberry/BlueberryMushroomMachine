@@ -2,11 +2,18 @@
 
 namespace BlueberryMushroomMachine.Editors
 {
-	class CraftingRecipesEditor : IAssetEditor
+	internal class CraftingRecipesEditor : IAssetEditor
 	{
+		private readonly bool _isDebugging;
+
+		public CraftingRecipesEditor()
+		{
+			_isDebugging = ModEntry.Instance.Config.DebugMode;
+		}
+
 		public bool CanEdit<T>(IAssetInfo asset)
 		{
-			return asset.AssetNameEquals(@"Data/CraftingRecipes");
+			return asset.AssetNameEquals(@"Const/CraftingRecipes");
 		}
 		public void Edit<T>(IAssetData asset)
 		{
@@ -16,7 +23,8 @@ namespace BlueberryMushroomMachine.Editors
 			if (!data.ContainsKey(name))
 				data.Add(name, Data.CraftingRecipeData);
 
-			Log.T($"Recipe injected: \"{name}\": \"{data[name]}\"");
+			Log.D($"Recipe injected: \"{name}\": \"{data[name]}\"",
+				_isDebugging);
 		}
 	}
 }

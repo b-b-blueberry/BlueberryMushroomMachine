@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
-using Microsoft.Xna.Framework.Input;
-
 using StardewValley;
 using StardewValley.Menus;
 
@@ -26,22 +23,15 @@ namespace BlueberryMushroomMachine
 			Instance = this;
 			Config = helper.ReadConfig<Config>();
 
-			Log.I("Development spam is on, see TRACE for debugging info.");
-			Log.I("Post a complete log via HTTPS://LOG.SMAPI.IO/ on the Nexus page if you hit any errors."
-				+ " Thank you!");
-
 			// Debug events.
-			if (Config.Debugging)
-			{
-				// Debug shortcut hotkeys.
+			if (Config.DebugMode)
 				helper.Events.Input.ButtonPressed += OnButtonPressed;
-			}
 
 			Helper.Events.GameLoop.GameLaunched += OnGameLaunched;
 			Helper.Events.GameLoop.DayStarted += OnDayStarted;
 
 			// Harmony setup.
-			var harmony = HarmonyInstance.Create($"{Data.AuthorName}.{Data.PackageName}");
+			var harmony = HarmonyInstance.Create($"{Const.AuthorName}.{Const.PackageName}");
 			
 			harmony.Patch(
 				original: AccessTools.Method(typeof(CraftingRecipe), nameof(CraftingRecipe.createItem)),
@@ -55,12 +45,19 @@ namespace BlueberryMushroomMachine
 
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
 		{
+			Log.I("See log file TRACE for Mushroom Machine state info.");
+			Log.I("Post a complete log via HTTPS://LOG.SMAPI.IO/ on the Nexus page if you hit any errors."
+			      + " Thank you!");
+
+			Log.D($"Recipe Cheat: {Config.RecipeAlwaysAvailable.ToString()}",
+				Config.DebugMode);
+			Log.D($"Recipe Cheat: {Config.RecipeAlwaysAvailable.ToString()}",
+				Config.DebugMode);
+
 			// Identify the tilesheet index for the machine, and then continue
 			// to inject relevant data into multiple other assets if successful.
 			if (!Game1.bigCraftablesInformation.ContainsKey(Data.PropagatorIndex) || Data.PropagatorIndex == 0)
-			{
 				AddObjectData();
-			}
 		}
 		
 		private void OnDayStarted(object sender, DayStartedEventArgs e)
@@ -71,70 +68,56 @@ namespace BlueberryMushroomMachine
 
 			// Add the Propagator crafting recipe if the cheat is enabled.
 			if (Config.RecipeAlwaysAvailable)
-			{
-				if (!Game1.player.craftingRecipes.ContainsKey(Data.PropagatorName))
-					Game1.player.craftingRecipes.Add(Data.PropagatorName, 0);
-			}
-
-			Log.T($"Recipe Cheat: {Config.RecipeAlwaysAvailable.ToString()}");
+				if (!Game1.player.craftingRecipes.ContainsKey(Const.PropagatorName))
+					Game1.player.craftingRecipes.Add(Const.PropagatorName, 0);
 
 			// TEMPORARY FIX: Manually rebuild each Propagator in the user's inventory.
 			// PyTK ~1.12.13.unofficial seemingly rebuilds inventory objects at ReturnedToTitle,
 			// so inventory objects are only rebuilt after the save is reloaded for every session.
 			var items = Game1.player.Items;
-			for (var i = items.Count-1; i > 0; --i)
+			for (var i = items.Count - 1; i > 0; --i)
 			{
-				if (items[i] != null)
-				{
-					if (items[i].Name.StartsWith($"PyTK|Item|{Data.PackageName}")
-						&& items[i].Name.Contains($"{Data.PropagatorDefaultDisplayName}"))
-					{
-						Log.T($"Found {items[i].Name}.");
-						Log.T($"Found a broken {Data.PropagatorName} in {Game1.player.Name}'s inventory slot {i}"
-							+", rebuilding manually.");
+				if (items[i] == null
+				    || !items[i].Name.StartsWith($"PyTK|Item|{Const.PackageName}") 
+				    || !items[i].Name.Contains($"{Const.PropagatorDefaultDisplayName}"))
+					continue;
+				
+				Log.D($"Found a broken {items[i].Name} in {Game1.player.Name}'s inventory slot {i}"
+				      + ", rebuilding manually.",
+					Config.DebugMode);
 						
-						var stack = items[i].Stack;
-						Game1.player.removeItemFromInventory(items[i]);
-						Game1.player.addItemToInventory(new Propagator() { Stack = stack }, i);
-					}
-				}
+				var stack = items[i].Stack;
+				Game1.player.removeItemFromInventory(items[i]);
+				Game1.player.addItemToInventory(new Propagator { Stack = stack }, i);
 			}
 
 			// TEMPORARY FIX: Manually DayUpdate each Propagator.
 			// PyTK 1.9.11+ rebuilds objects at DayEnding, so Cask.DayUpdate is never called.
 			// Also fixes 0-index objects from PyTK rebuilding before the new index is generated.
-			foreach (var loc in Game1.locations)
+			foreach (var location in Game1.locations)
 			{
-				if (loc.Objects.Values.Count() > 0)
-				{
-					var objects = loc.Objects.Values.Where(o => o.Name.Equals(Data.PropagatorName));
-					foreach (Propagator obj in objects)
-					{
-						if (obj != null)
-						{
-							//if (obj.ParentSheetIndex != Data.PropagatorIndex)
-								//obj.ParentSheetIndex = Data.PropagatorIndex;
-							obj.TemporaryDayUpdate();
-						}
-					}
-				}
+				if (!location.Objects.Values.Any())
+					continue;
+				var objects = location.Objects.Values.Where(o => o.Name.Equals(Const.PropagatorName));
+				foreach (var obj in objects)
+					((Propagator)obj).TemporaryDayUpdate();
 			}
 		}
 
 		private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
 		{
-			e.Button.TryGetKeyboard(out Keys keyPressed);
+			e.Button.TryGetKeyboard(out var keyPressed);
+
+			if (Game1.activeClickableMenu != null)
+				return;
 
 			// Debug functionalities.
-			if (Game1.activeClickableMenu == null)
+			if (keyPressed.ToSButton().Equals(Config.GivePropagatorKey))
 			{
-				if (keyPressed.ToSButton().Equals(Config.GivePropagatorKey))
-				{
-					Log.T($"{Game1.player.Name} spawned in a machine.");
-
-					Propagator prop = new Propagator(Game1.player.getTileLocation());
-					Game1.player.addItemByMenuIfNecessary(prop);
-				}
+				var prop = new Propagator(Game1.player.getTileLocation());
+				Game1.player.addItemByMenuIfNecessary(prop);
+				Log.D($"{Game1.player.Name} spawned in a {Const.PropagatorName} ({prop.DisplayName}).",
+					Config.DebugMode);
 			}
 		}
 
@@ -163,7 +146,7 @@ namespace BlueberryMushroomMachine
 
 	#region Harmony Patches
 
-	class CraftingRecipePatch
+	public class CraftingRecipePatch
 	{
 		internal static void Postfix(CraftingRecipe __instance, Item __result)
 		{
@@ -174,8 +157,8 @@ namespace BlueberryMushroomMachine
 				__result = new Propagator(Game1.player.getTileLocation());
 		}
 	}
-	
-	class CraftingPagePatch
+
+	public class CraftingPagePatch
 	{
 		internal static bool Prefix(
 			List<Dictionary<ClickableTextureComponent, CraftingRecipe>> ___pagesOfCraftingRecipes,
@@ -185,7 +168,7 @@ namespace BlueberryMushroomMachine
 			try
 			{
 				// Fetch an instance of any clicked-on craftable in the crafting menu.
-				Item tempItem = ___pagesOfCraftingRecipes[___currentCraftingPage][c]
+				var tempItem = ___pagesOfCraftingRecipes[___currentCraftingPage][c]
 					.createItem();
 				
 				// Fall through the prefix for any craftables other than the Propagator.
@@ -209,16 +192,16 @@ namespace BlueberryMushroomMachine
 					return false;
 
 				// Add the machine to the user's inventory.
-				Propagator prop = new Propagator(Game1.player.getTileLocation());
-				Game1.player.addItemToInventoryBool(prop, false);
+				var prop = new Propagator(Game1.player.getTileLocation());
+				Game1.player.addItemToInventoryBool(prop);
 				___heldItem = null;
 				return false;
 			}
 			catch (Exception e)
 			{
-				Log.E($"{Data.AuthorName}.{Data.PackageName} failed in" +
-					$"{nameof(CraftingPagePatch)}.{nameof(Prefix)}" +
-					$"\n{e}");
+				Log.E($"{Const.AuthorName}.{Const.PackageName} failed in"
+					+ $"{nameof(CraftingPagePatch)}.{nameof(Prefix)}"
+					+ $"\n{e}");
 				return true;
 			}
 		}
