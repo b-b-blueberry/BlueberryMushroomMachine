@@ -1,6 +1,6 @@
 ﻿namespace BlueberryMushroomMachine
 {
-	internal class Data
+	internal class ModValues
 	{
 		internal static int PropagatorIndex = 0;
 		internal static string ObjectData = "{0}/0/-300/Crafting -9/{1}/true/true/0";
