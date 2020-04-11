@@ -5,6 +5,7 @@ namespace BlueberryMushroomMachine
 	public class Config
 	{
 		public int MaximumDaysToMature { get; set; } = 4;
+		public bool MaximumQuantityLimitsDoubled { get; set; } = false;
 
 		public bool WorksInCellar { get; set; } = true;
 		public bool WorksInFarmCave { get; set; } = true;

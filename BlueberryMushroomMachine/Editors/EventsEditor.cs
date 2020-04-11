@@ -40,7 +40,7 @@ namespace BlueberryMushroomMachine.Editors
 			if (asset.AssetNameEquals(@"Data/Events/Farm"))
 			{
 				var json = ModEntry.Instance.Helper.Content.Load<IDictionary<string, string>>
-					(Const.EventsPath);
+					(ModConsts.EventsPath);
 				foreach (var key in json.Keys)
 				{
 					if (key.StartsWith("46370001"))
@@ -63,7 +63,7 @@ namespace BlueberryMushroomMachine.Editors
 									ModEntry.Instance.i18n.Get("event.4637.0001.0001"),
 									ModEntry.Instance.i18n.Get("event.4637.0001.0002"),
 									ModEntry.Instance.i18n.Get("event.4637.0001.0003"),
-									Const.PropagatorInternalName);
+									ModConsts.PropagatorInternalName);
 								Log.D($"Injecting event.",
 									_isDebugging);
 								data.Add(key, value);

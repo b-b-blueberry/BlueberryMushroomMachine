@@ -8,6 +8,7 @@ using StardewValley.Objects;
 using StardewValley.Locations;
 
 using PyTK.CustomElementHandler;
+using Object = StardewValley.Object;
 
 namespace BlueberryMushroomMachine
 {
@@ -61,7 +62,7 @@ namespace BlueberryMushroomMachine
 		/// </summary>
 		private void loadObjectData()
 		{
-			Name = Const.PropagatorInternalName;
+			Name = ModConsts.PropagatorInternalName;
 			ParentSheetIndex = ModValues.PropagatorIndex;
 			DisplayName = loadDisplayName();
 
@@ -96,7 +97,7 @@ namespace BlueberryMushroomMachine
 			Item obj = new StardewValley.Object(index, 1)
 				{ Quality = quality };
 
-			if (Const.MushroomGrowingRates.TryGetValue(index, out var rate))
+			if (ModConsts.MushroomGrowingRates.TryGetValue(index, out var rate))
 			{
 				putObject(obj.getOne(), rate);
 				Quantity = quantity;
@@ -121,7 +122,7 @@ namespace BlueberryMushroomMachine
 			var maths =
 				(((quantity - 1) + ((float)days / defaultDaysToMature)) * defaultDaysToMature)
 				/ ((max - 1) * defaultDaysToMature)
-				* 3f;
+				* ModConsts.OverlayMushroomFrames;
 			
 			return (int)Math.Floor(maths);
 		}
@@ -163,17 +164,40 @@ namespace BlueberryMushroomMachine
 		/// </param>
 		private void popObject(bool remove)
 		{
+			Log.T($"popObject(bool remove: {remove})",
+				ModEntry.Instance.Config.DebugMode);
 			// Incorporate Gatherer's skill effects for extra production.
-			var extra = 0;
+			var popQuantity = Quantity;
 			if (ProduceExtra && Game1.player.professions.Contains(Farmer.gatherer)
 				&& new Random().Next(5) == 0)
-				extra = 1;
-			
+				popQuantity += 1;
+
 			// Extract held object.
-			Game1.playSound("coin");
-			Game1.createMultipleObjectDebris(heldObject.Value.ParentSheetIndex,
-				(int)TileLocation.X, (int)TileLocation.Y, Quantity + extra,
-				Game1.player.UniqueMultiplayerID);
+			Game1.playSound("harvest");
+
+			// todo: remove outdated code
+			if (true)
+			{
+				// Method 2 - Adjusted quality
+				var popQuality = !remove && Game1.player.professions.Contains(Farmer.botanist) ? 4 : heldObject.Value.Quality;
+				var popObject = new Object(heldObject.Value.ParentSheetIndex, 1, false, -1, popQuality);
+
+				Log.T($"Popping {heldObject.Value.DisplayName}, quality {popQuality}, quantity {popQuantity}",
+					ModEntry.Instance.Config.DebugMode);
+
+				for (var i = 0; i < popQuantity; ++i)
+					Game1.createItemDebris(popObject.getOne(), new Vector2(TileLocation.X * 64 + 32, TileLocation.Y * 64 + 32), -1);
+			}
+			else
+			{
+				// Method 1 - Default quality
+				Game1.createMultipleObjectDebris(heldObject.Value.ParentSheetIndex,
+					(int)TileLocation.X, (int)TileLocation.Y, popQuantity,
+					Game1.player.UniqueMultiplayerID);
+
+				Log.T($"Popping {heldObject.Value.DisplayName}, quality default, quantity {popQuantity}",
+					ModEntry.Instance.Config.DebugMode);
+			}
 
 			// Reset the harvest.
 			var obj = heldObject.Value;
@@ -185,7 +209,7 @@ namespace BlueberryMushroomMachine
 			}
 			else
 			{
-				putObject(obj.getOne(), Const.MushroomGrowingRates[obj.ParentSheetIndex]);
+				putObject(obj.getOne(), ModConsts.MushroomGrowingRates[obj.ParentSheetIndex]);
 				minutesUntilReady.Value = 999999;
 				Quantity = 1;
 			}
@@ -247,8 +271,10 @@ namespace BlueberryMushroomMachine
 		public new void checkForMaturity()
 		{
 			// Stop adding to the stack when the limit is reached.
-			Const.MushroomQuantityLimits.TryGetValue(
+			ModConsts.MushroomQuantityLimits.TryGetValue(
 				heldObject.Value.ParentSheetIndex, out var max);
+			if (ModEntry.Instance.Config.MaximumQuantityLimitsDoubled)
+				max *= 2;
 			if (Quantity >= max)
 				return;
 
@@ -384,7 +410,7 @@ namespace BlueberryMushroomMachine
 				return false;
 
 			// Ignore wrong items.
-			if (!Const.MushroomGrowingRates.TryGetValue(dropIn.ParentSheetIndex, out var rate))
+			if (!ModConsts.MushroomGrowingRates.TryGetValue(dropIn.ParentSheetIndex, out var rate))
 				return false;
 
 			if (probe)
@@ -446,7 +472,7 @@ namespace BlueberryMushroomMachine
 			// Draw the base sprite.
 			var whichMushroom = 0;
 			if (heldObject.Value != null)
-				Const.MushroomSourceRects.TryGetValue(
+				ModConsts.MushroomSourceRects.TryGetValue(
 					heldObject.Value.ParentSheetIndex, out whichMushroom);
 			var vector2 = getScale() * 4f;
 			var local = Game1.GlobalToLocal(Game1.viewport, 
@@ -471,20 +497,25 @@ namespace BlueberryMushroomMachine
 				return;
 
 			// Draw the held object overlay.
-			Const.MushroomQuantityLimits.TryGetValue(
+			ModConsts.MushroomQuantityLimits.TryGetValue(
 				heldObject.Value.ParentSheetIndex, out var max);
+			if (ModEntry.Instance.Config.MaximumQuantityLimitsDoubled)
+				max *= 2;
 			var whichFrame = getWhichFrameForOverlay(
 				(int)daysToMature.Value, Quantity, max);
+			if (whichFrame > ModConsts.OverlayMushroomFrames)
+				whichFrame = ModConsts.OverlayMushroomFrames;
 
-			b.Draw(ModEntry.OverlayTexture,
-					destRect,
-					getSourceRectForOverlay(whichMushroom, whichFrame),
-					Color.White,
-					0f,
-					Vector2.Zero,
-					SpriteEffects.None,
-					Math.Max(0.0f, ((y + 1) * 64 - 24) / 10000f) 
-					+ (Game1.currentLocation.IsOutdoors ? 0f : x * 1f / 10000f) + 1f / 10000f);
+			b.Draw(
+				ModEntry.OverlayTexture,
+				destRect,
+				getSourceRectForOverlay(whichMushroom, whichFrame),
+				Color.White,
+				0f,
+				Vector2.Zero,
+				SpriteEffects.None,
+				Math.Max(0.0f, ((y + 1) * 64 - 24) / 10000f) 
+				+ (Game1.currentLocation.IsOutdoors ? 0f : x * 1f / 10000f) + 1f / 10000f);
 		}
 
 		public override Item getOne()
@@ -533,7 +564,8 @@ namespace BlueberryMushroomMachine
 			loadDefaultValues();
 			loadObjectData();
 			
-			Log.T($"Rebuilt {Name} ({ParentSheetIndex}) at({TileLocation.X}/{TileLocation.Y})");
+			Log.T($"Rebuilt {Name} ({ParentSheetIndex}) at({TileLocation.X}/{TileLocation.Y})",
+				ModEntry.Instance.Config.DebugMode);
 		}
 	}
 }

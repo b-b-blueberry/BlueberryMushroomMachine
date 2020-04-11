@@ -3,7 +3,7 @@ using System.IO;
 
 namespace BlueberryMushroomMachine
 {
-	internal class Const
+	internal class ModConsts
 	{
 		// Project
 		internal const string AuthorName
@@ -24,6 +24,7 @@ namespace BlueberryMushroomMachine
 			= $"{PackageName}.Propagator";
 
 		// Objects
+		internal const int OverlayMushroomFrames = 3;
 		private enum Mushrooms
 		{
 			Morel = 257,

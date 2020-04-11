@@ -55,7 +55,7 @@
     <Compile Include="Editors\BigCraftablesInfoEditor.cs" />
     <Compile Include="Editors\BigCraftablesTilesheetEditor.cs" />
     <Compile Include="Editors\CraftingRecipesEditor.cs" />
-    <Compile Include="Core\Const.cs" />
+    <Compile Include="Core\ModConsts.cs" />
     <Compile Include="Core\ModEntry.cs" />
     <Compile Include="Core\Propagator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -67,6 +67,10 @@
     <None Include="i18n\default.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="i18n\fr.json" />
+    <None Include="i18n\ko.json" />
+    <None Include="i18n\pt-br.json" />
+    <None Include="i18n\zh.json" />
     <None Include="manifest.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

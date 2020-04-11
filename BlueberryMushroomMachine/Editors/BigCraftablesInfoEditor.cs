@@ -33,7 +33,7 @@ namespace BlueberryMushroomMachine.Editors
 
 			// Inject custom object data with appending index.
 			ModValues.ObjectData = string.Format(ModValues.ObjectData,
-				Const.PropagatorInternalName,
+				ModConsts.PropagatorInternalName,
 				ModEntry.Instance.i18n.Get("machine.desc"));
 
 			if (!data.ContainsKey(ModValues.PropagatorIndex))

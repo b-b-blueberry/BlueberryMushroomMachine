@@ -26,7 +26,7 @@ namespace BlueberryMushroomMachine.Editors
 				_isDebugging);
 
 			// Expand the base tilesheet if needed.
-			var src = ModEntry.Instance.Helper.Content.Load<Texture2D>(Const.MachinePath);
+			var src = ModEntry.Instance.Helper.Content.Load<Texture2D>(ModConsts.MachinePath);
 			var dest = asset.AsImage();
 			var srcRect = new Rectangle(0, 0, 16, 32);
 			var destRect = Propagator.getSourceRectForBigCraftable(ModValues.PropagatorIndex);

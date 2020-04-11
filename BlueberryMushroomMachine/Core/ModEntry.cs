@@ -36,14 +36,14 @@ namespace BlueberryMushroomMachine
 			Helper.Events.GameLoop.DayStarted += OnDayStarted;
 
 			// Load mushroom overlay texture for all filled machines.
-			OverlayTexture = Helper.Content.Load<Texture2D>(Const.OverlayPath);
+			OverlayTexture = Helper.Content.Load<Texture2D>(ModConsts.OverlayPath);
 
 			// Harmony setup.
-			var harmony = HarmonyInstance.Create($"{Const.AuthorName}.{Const.PackageName}");
+			var harmony = HarmonyInstance.Create($"{ModConsts.AuthorName}.{ModConsts.PackageName}");
 
 			Log.D("Harmony patching methods:"
 			      + "\nCraftingPage.performHoverAction:Postfix:void"
-			      + "\nCraftingPage.clickCraftingRecipe:Prefix:bool"
+			      + "\nCraftingPage.clickCraftingRecipe:Prefix:bool - MAY RETURN FALSE"
 				  + "\nCraftingRecipe.createItem:Postfix:void",
 				Config.DebugMode);
 
@@ -62,15 +62,13 @@ namespace BlueberryMushroomMachine
 
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
 		{
-			Log.I("See log file TRACE for Mushroom Machine state info." 
-			      + " Post a complete log via HTTPS://LOG.SMAPI.IO/ on the Nexus page with any issues."
-			      + " Thanks!");
-
 			Log.D("Works in locations:"
 			      + $" {Config.WorksInCellar} {Config.WorksInFarmCave} {Config.WorksInBuildings}"
 				  + $" {Config.WorksInFarmHouse} {Config.WorksInGreenhouse} {Config.WorksOutdoors}"
-				  + $"\nMushroom Cave: {Config.RecipeAlwaysAvailable}"
+				  + $"\nMushroom Cave: {Config.DisabledForFruitCave}"
 				  + $"\nRecipe Cheat:  {Config.RecipeAlwaysAvailable}"
+				  + $"\nStack Cheat:  {Config.MaximumQuantityLimitsDoubled}"
+				  + $"\nMature Timer:  {Config.MaximumDaysToMature}"
 				  + $"\nDebug Mode:    {Config.DebugMode}",
 				Config.DebugMode);
 
@@ -87,8 +85,8 @@ namespace BlueberryMushroomMachine
 
 			// Add the Propagator crafting recipe if the cheat is enabled.
 			if (Config.RecipeAlwaysAvailable)
-				if (!Game1.player.craftingRecipes.ContainsKey(Const.PropagatorInternalName))
-					Game1.player.craftingRecipes.Add(Const.PropagatorInternalName, 0);
+				if (!Game1.player.craftingRecipes.ContainsKey(ModConsts.PropagatorInternalName))
+					Game1.player.craftingRecipes.Add(ModConsts.PropagatorInternalName, 0);
 
 			// TEMPORARY FIX: Manually rebuild each Propagator in the user's inventory.
 			// PyTK ~1.12.13.unofficial seemingly rebuilds inventory objects at ReturnedToTitle,
@@ -97,8 +95,8 @@ namespace BlueberryMushroomMachine
 			for (var i = items.Count - 1; i > 0; --i)
 			{
 				if (items[i] == null
-				    || !items[i].Name.StartsWith($"PyTK|Item|{Const.PackageName}") 
-				    || !items[i].Name.Contains($"{Const.PropagatorInternalName}"))
+				    || !items[i].Name.StartsWith($"PyTK|Item|{ModConsts.PackageName}") 
+				    || !items[i].Name.Contains($"{ModConsts.PropagatorInternalName}"))
 					continue;
 				
 				Log.D($"Found a broken {items[i].Name} in {Game1.player.Name}'s inventory slot {i}"
@@ -117,7 +115,7 @@ namespace BlueberryMushroomMachine
 			{
 				if (!location.Objects.Values.Any())
 					continue;
-				var objects = location.Objects.Values.Where(o => o.Name.Equals(Const.PropagatorInternalName));
+				var objects = location.Objects.Values.Where(o => o.Name.Equals(ModConsts.PropagatorInternalName));
 				foreach (var obj in objects)
 					((Propagator)obj).TemporaryDayUpdate();
 			}
@@ -135,7 +133,7 @@ namespace BlueberryMushroomMachine
 			{
 				var prop = new Propagator(Game1.player.getTileLocation());
 				Game1.player.addItemByMenuIfNecessary(prop);
-				Log.D($"{Game1.player.Name} spawned in a {Const.PropagatorInternalName} ({prop.DisplayName}).",
+				Log.D($"{Game1.player.Name} spawned in a {ModConsts.PropagatorInternalName} ({prop.DisplayName}).",
 					Config.DebugMode);
 			}
 		}
@@ -172,7 +170,7 @@ namespace BlueberryMushroomMachine
 		{
 			if (___hoverRecipe == null)
 				return;
-			if (___hoverRecipe.name.Equals(Const.PropagatorInternalName))
+			if (___hoverRecipe.name.Equals(ModConsts.PropagatorInternalName))
 				___hoverRecipe.DisplayName = new Propagator().DisplayName;
 		}
 	}
@@ -191,7 +189,7 @@ namespace BlueberryMushroomMachine
 					.createItem();
 
 				// Fall through the prefix for any craftables other than the Propagator.
-				if (!tempItem.Name.Equals(Const.PropagatorInternalName))
+				if (!tempItem.Name.Equals(ModConsts.PropagatorInternalName))
 					return true;
 
 				// Behaviours as from base method.
@@ -217,7 +215,7 @@ namespace BlueberryMushroomMachine
 			}
 			catch (Exception e)
 			{
-				Log.E($"{Const.AuthorName}.{Const.PackageName} failed in"
+				Log.E($"{ModConsts.AuthorName}.{ModConsts.PackageName} failed in"
 				      + $" {nameof(ClickCraftingRecipePatch)}.{nameof(Prefix)}"
 				      + $"\n{e}");
 				return true;
@@ -231,7 +229,7 @@ namespace BlueberryMushroomMachine
 		{
 			// Intercept machine crafts with a Propagator subclass,
 			// rather than a generic nonfunctional craftable.
-			if (__instance.name == Const.PropagatorInternalName)
+			if (__instance.name == ModConsts.PropagatorInternalName)
 				__result = new Propagator(Game1.player.getTileLocation());
 		}
 	}
