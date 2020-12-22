@@ -76,7 +76,7 @@ namespace BlueberryMushroomMachine
 		/// and resets all growth and harvest variables.
 		/// </summary>
 		/// <param name="dropIn">Some instance of an object, hopefully a mushroom.</param>
-		internal void PutSourceMushroom(Item dropIn)
+		public void PutSourceMushroom(Item dropIn)
 		{
 			ModEntry.GetMushroomGrowthRate(dropIn as Object, out RateToMature);
 			ModEntry.GetMushroomMaximumQuantity(dropIn as Object, out MaximumStack);
@@ -91,7 +91,7 @@ namespace BlueberryMushroomMachine
 				ModEntry.Instance.Config.DebugMode);
 		}
 
-		internal void PutExtraHeldMushroom(float daysToMature)
+		public void PutExtraHeldMushroom(float daysToMature)
 		{
 			heldObject.Value = new Object(SourceMushroomIndex, 1);
 			DaysToMature = daysToMature;
@@ -99,7 +99,7 @@ namespace BlueberryMushroomMachine
 			minutesUntilReady.Value = 999999;
 		}
 
-		internal bool PopByAction()
+		public bool PopByAction()
 		{
 			Log.D($"PopByAction at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
 				ModEntry.Instance.Config.DebugMode);
@@ -111,7 +111,7 @@ namespace BlueberryMushroomMachine
 			return false;
 		}
 
-		internal bool PopByTool()
+		public bool PopByTool()
 		{
 			Log.D($"PopByTool at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
 				ModEntry.Instance.Config.DebugMode);
@@ -129,7 +129,7 @@ namespace BlueberryMushroomMachine
 			return false;
 		}
 
-		internal void PopExtraHeldMushrooms(bool giveNothing)
+		public void PopExtraHeldMushrooms(bool giveNothing)
 		{
 			Log.D($"PopExtraHeldMushrooms at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
 				ModEntry.Instance.Config.DebugMode);
@@ -163,7 +163,7 @@ namespace BlueberryMushroomMachine
 		/// <param name="forceRemoveSource">
 		/// Whether or not to pop the source mushroom in addition to any extra mushrooms, leaving the machine considered 'empty'.
 		/// </param>
-		internal void PopExposedMushroom(bool forceRemoveSource)
+		public void PopExposedMushroom(bool forceRemoveSource)
 		{
 			Log.D($"PopExposedMushroom(forceRemoveSource: {forceRemoveSource})"
 				+ $" (item: [{SourceMushroomIndex}] {SourceMushroomName} Q{SourceMushroomQuality})" +
@@ -202,7 +202,7 @@ namespace BlueberryMushroomMachine
 		/// <summary>
 		/// Behaviours for tool actions to uproot the machine itself.
 		/// </summary>
-		internal void PopMachine()
+		public void PopMachine()
 		{
 			Log.D($"PopMachine at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
 				ModEntry.Instance.Config.DebugMode);

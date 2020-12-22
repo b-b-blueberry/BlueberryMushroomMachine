@@ -1,6 +1,6 @@
 ﻿using Pathoschild.Stardew.Automate;
 
-namespace BlueberryMushroomMachine.Core
+namespace BlueberryMushroomAutomation.Core
 {
 	public interface IAutomateAPI
 	{

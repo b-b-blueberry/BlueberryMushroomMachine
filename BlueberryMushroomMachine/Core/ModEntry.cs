@@ -55,10 +55,6 @@ namespace BlueberryMushroomMachine
 			// SpaceCore setup
 			var spacecoreApi = Helper.ModRegistry.GetApi<Core.ISpaceCoreAPI>("spacechase0.SpaceCore");
 			spacecoreApi.RegisterSerializerType(typeof(Propagator));
-
-			// Automate setup
-			var automateApi = Helper.ModRegistry.GetApi<Core.IAutomateAPI>("Pathoschild.Automate");
-			automateApi.AddFactory(new Core.PropagatorFactory());
 		}
 
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
