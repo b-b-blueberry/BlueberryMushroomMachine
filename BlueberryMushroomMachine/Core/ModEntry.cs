@@ -1,18 +1,21 @@
-﻿using System;
-using System.Linq;
-
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-
-using StardewValley;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
+using StardewValley;
+using System;
+using System.Linq;
 using Object = StardewValley.Object;
 
 namespace BlueberryMushroomMachine
 {
 	public class ModEntry : Mod
 	{
+		public class SaveData
+		{
+			public bool PyTKMigration { get; set; } = true;
+		}
+
 		public enum Mushrooms
 		{
 			Morel = 257,
@@ -23,7 +26,7 @@ namespace BlueberryMushroomMachine
 		}
 
 		internal static ModEntry Instance;
-
+		internal SaveData Data;
 		internal Config Config;
 		internal ITranslationHelper i18n => Helper.Translation;
 
@@ -45,6 +48,17 @@ namespace BlueberryMushroomMachine
 
 			// Harmony setup
 			HarmonyPatches.Apply();
+		}
+
+		private void LoadApis()
+		{
+			// SpaceCore setup
+			var spacecoreApi = Helper.ModRegistry.GetApi<Core.ISpaceCoreAPI>("spacechase0.SpaceCore");
+			spacecoreApi.RegisterSerializerType(typeof(Propagator));
+
+			// Automate setup
+			var automateApi = Helper.ModRegistry.GetApi<Core.IAutomateAPI>("Pathoschild.Automate");
+			automateApi.AddFactory(new Core.PropagatorFactory());
 		}
 
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
@@ -72,6 +86,8 @@ namespace BlueberryMushroomMachine
 			}
 			finally
 			{
+				LoadApis();
+
 				// Identify the tilesheet index for the machine, and then continue
 				// to inject relevant data into multiple other assets if successful
 				AddObjectData();
@@ -80,6 +96,17 @@ namespace BlueberryMushroomMachine
 		
 		private void OnDayStarted(object sender, DayStartedEventArgs e)
 		{
+			if (Data == null)
+			{
+				Log.D("Loading data.", Config.DebugMode);
+				Data = Helper.Data.ReadSaveData<SaveData>("SaveData") ?? new SaveData();
+			}
+			else
+			{
+				Log.D("Saving data.", Config.DebugMode);
+				Helper.Data.WriteSaveData<SaveData>("SaveData", Data);
+			}
+
 			// Add Robin's pre-Demetrius-event dialogue
 			if (Game1.player.daysUntilHouseUpgrade.Value == 2 && Game1.player.HouseUpgradeLevel == 2)
 				Game1.player.activeDialogueEvents.Add("event.4637.0000.0000", 7);
@@ -89,45 +116,24 @@ namespace BlueberryMushroomMachine
 				if (!Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorInternalName))
 					Game1.player.craftingRecipes.Add(ModValues.PropagatorInternalName, 0);
 
-			// TEMPORARY FIX: Manually rebuild each Propagator in the user's inventory.
-			// PyTK ~1.12.13.unofficial seemingly rebuilds inventory objects at ReturnedToTitle,
-			// so inventory objects are only rebuilt after the save is reloaded for every session
-			if (Config.CheckForPyTKMigration)
-			{
-				var items = Game1.player.Items;
-				for (var i = items.Count - 1; i > 0; --i)
-				{
-					if (items[i] == null
-					    || !items[i].Name.StartsWith($"PyTK|Item|{ModValues.PackageName}") 
-					    || !items[i].Name.Contains($"{ModValues.PropagatorInternalName}"))
-						continue;
-				
-					Log.T($"Found a broken {items[i].Name} in {Game1.player.Name}'s inventory slot {i}"
-					      + ", rebuilding manually.",
-						Config.DebugMode);
-						
-					var stack = items[i].Stack;
-					Game1.player.removeItemFromInventory(items[i]);
-					Game1.player.addItemToInventory(new Propagator { Stack = stack }, i);
-				}
-			}
+			// Correct invalid objects matching ours
+			RebuildPropagtors();
 
-			// TEMPORARY FIX: Manually DayUpdate each Propagator.
-			// PyTK 1.9.11+ rebuilds objects at DayEnding, so Cask.DayUpdate is never called.
-			// Also fixes 0-index objects from PyTK rebuilding before the new index is generated.
+			// Manually DayUpdate each Propagator
 			foreach (var location in Game1.locations)
 			{
 				if (!location.Objects.Values.Any())
 					continue;
 				var objects = location.Objects.Values.Where(o => o.Name.Equals(ModValues.PropagatorInternalName));
 				foreach (var obj in objects)
-					((Propagator)obj).TemporaryDayUpdate();
+				{
+					((Propagator)obj).DayUpdate();
+				}
 			}
 		}
 
 		private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
 		{
-			e.Button.TryGetKeyboard(out var keyPressed);
 			if (Game1.eventUp && !Game1.currentLocation.currentEvent.playerControlSequence
 			    || Game1.currentBillboard != 0 || Game1.activeClickableMenu != null || Game1.menuUp
 			    || Game1.nameSelectUp
@@ -136,12 +142,101 @@ namespace BlueberryMushroomMachine
 				return;
 
 			// Debug spawning for Propagator: Can't be spawned in with CJB Item Spawner as it subclasses Object
-			if (keyPressed.ToSButton().Equals(Config.GivePropagatorKey))
+			if (e.Button == Config.DebugGivePropagatorKey)
 			{
 				var prop = new Propagator(Game1.player.getTileLocation());
 				Game1.player.addItemByMenuIfNecessary(prop);
 				Log.D($"{Game1.player.Name} spawned in a"
 				      + $" [{ModValues.PropagatorIndex}] {ModValues.PropagatorInternalName} ({prop.DisplayName}).");
+			}
+		}
+
+		/// <summary>
+		/// Rebuilds any broken or missing Propagator objects in the player's inventory and throughout game location object lists.
+		/// </summary>
+		private void RebuildPropagtors()
+		{
+			if (Data != null && Data.PyTKMigration)
+			{
+				// Manually rebuild each Propagator in the player's inventory
+				var rebuiltItemsCount = 0;
+				var items = Game1.player.Items;
+				for (var i = items.Count - 1; i > 0; --i)
+				{
+					if (items[i] == null
+						|| !items[i].Name.StartsWith($"PyTK|Item|{ModValues.PackageName}")
+						|| !items[i].Name.Contains($"{ModValues.PropagatorInternalName}"))
+						continue;
+
+					++rebuiltItemsCount;
+					Log.D($"Found a broken Propagator in {Game1.player.Name}'s inventory slot {i}, rebuilding manually.",
+						Config.DebugMode);
+
+					var stack = items[i].Stack;
+					Game1.player.removeItemFromInventory(items[i]);
+					Game1.player.addItemToInventory(new Propagator { Stack = stack }, i);
+				}
+
+				// Manually rebuild each Propagator in the world
+				var rebuiltObjectsCount = 0;
+				foreach (var location in Game1.locations)
+				{
+					foreach (var key in location.Objects.Keys.ToList())
+					{
+						if (!location.Objects[key].Name.StartsWith($"PyTK|Item|{ModValues.PackageName}"))
+							continue;
+
+						int index = 0, quantity = 0, quality = 0;
+						var days = 0f;
+						var replacement = new Propagator();
+						var tileLocation = Vector2.Zero;
+						var isHoldingMushroom = false;
+						var itemSplit = location.Objects[key].Name.Substring(location.Objects[key].Name.IndexOf(", ")).Split('|');
+						foreach (var field in itemSplit)
+						{
+							var fieldSplit = field.Split(new[] { '=' }, 2);
+							switch (fieldSplit[0])
+							{
+								case "tileLocationX":
+									tileLocation.X = float.Parse(fieldSplit[1]);
+									break;
+								case "tileLocationY":
+									tileLocation.Y = float.Parse(fieldSplit[1]);
+									break;
+								case "heldObjectIndex":
+									index = int.Parse(fieldSplit[1]);
+									break;
+								case "heldObjectQuality":
+									quality = int.Parse(fieldSplit[1]);
+									break;
+								case "heldObjectQuantity":
+									quantity = int.Parse(fieldSplit[1]);
+									break;
+								case "days":
+									days = float.Parse(fieldSplit[1]);
+									break;
+								case "produceExtra":
+									isHoldingMushroom = true;
+									break;
+							}
+						}
+						replacement.TileLocation = tileLocation;
+						replacement.PutSourceMushroom(new Object(index, quantity) { Quality = quality });
+						if (isHoldingMushroom)
+						{
+							replacement.PutExtraHeldMushroom(daysToMature: days);
+						}
+
+						++rebuiltObjectsCount;
+						Log.D($"Found a broken Propagator in {location.Name}'s objects at {key.ToString()}, rebuilding manually.",
+							Config.DebugMode);
+
+						location.Objects[key] = replacement;
+					}
+				}
+
+				Log.D($"Rebuilt {rebuiltItemsCount} inventory items and {rebuiltObjectsCount} world objects.");
+				Data.PyTKMigration = false;
 			}
 		}
 
@@ -165,19 +260,20 @@ namespace BlueberryMushroomMachine
 			// Inject Demetrius' event
 			Helper.Content.AssetEditors.Add(new Editors.EventsEditor());
 		}
-		
+
 		/// <summary>
 		/// Determines the frame to be used for showing held mushroom growth.
 		/// </summary>
-		/// <param name="days">Current days since last growth.</param>
+		/// <param name="currentDays">Current days since last growth.</param>
+		/// <param name="goalDays">Number of days when next growth happens.</param>
 		/// <param name="quantity">Current count of mushrooms.</param>
 		/// <param name="max">Maximum amount of mushrooms of this type.</param>
 		/// <returns>Frame for mushroom growth progress.</returns>
-		public static int GetOverlayGrowthFrame(int days, int daysToMature, int quantity, int max)
+		public static int GetOverlayGrowthFrame(float currentDays, int goalDays, int quantity, int max)
 		{
 			var maths =
-				(((quantity - 1) + ((float)days / daysToMature)) * daysToMature)
-				/ ((max - 1) * daysToMature)
+				(((quantity - 1) + ((float)currentDays / goalDays)) * goalDays)
+				/ ((max - 1) * goalDays)
 				* ModValues.OverlayMushroomFrames;
 			maths = Math.Max(0, Math.Min(ModValues.OverlayMushroomFrames, maths));
 			return (int)Math.Floor(maths);
@@ -189,12 +285,11 @@ namespace BlueberryMushroomMachine
 		/// Undefined mushrooms will use their default object rectangle.
 		/// </summary>
 		/// <returns></returns>
-		public static Rectangle GetOverlaySourceRect(Object o, int whichFrame)
+		public static Rectangle GetOverlaySourceRect(int index, int whichFrame)
 		{
-			return Enum.IsDefined(typeof(Mushrooms), o.ParentSheetIndex)
-				? new Rectangle(whichFrame * 16,  GetMushroomSourceRectIndex(o) * 32, 16, 32)
-				: Game1.getSourceRectForStandardTileSheet(
-					Game1.objectSpriteSheet, o.ParentSheetIndex, 16, 16);
+			return Enum.IsDefined(typeof(Mushrooms), index)
+				? new Rectangle(whichFrame * 16,  GetMushroomSourceRectIndex(index) * 32, 16, 32)
+				: Game1.getSourceRectForStandardTileSheet(Game1.objectSpriteSheet, index, 16, 16);
 		}
 		
 		public static bool IsValidMushroom(Object o)
@@ -205,9 +300,9 @@ namespace BlueberryMushroomMachine
 			       || Instance.Config.OtherObjectsThatCanBeGrown.Contains(o.Name);
 		}
 
-		public static int GetMushroomSourceRectIndex(Object o)
+		public static int GetMushroomSourceRectIndex(int index)
 		{
-			return o.ParentSheetIndex switch
+			return index switch
 			{
 				(int) Mushrooms.Morel => 0,
 				(int) Mushrooms.Chantarelle => 1,

@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using Harmony;
+﻿using Harmony; // el diavolo
 using StardewValley;
 using StardewValley.Menus;
+using System;
+using System.Collections.Generic;
 
 namespace BlueberryMushroomMachine
 {
@@ -13,89 +13,71 @@ namespace BlueberryMushroomMachine
 			var harmony = HarmonyInstance.Create($"{ModValues.AuthorName}.{ModValues.PackageName}");
 
 			harmony.Patch(
+				original: AccessTools.Method(typeof(CraftingRecipe), "createItem"),
+				postfix: new HarmonyMethod(typeof(HarmonyPatches), nameof(CraftingRecipe_CreateItem_Postfix)));
+			harmony.Patch(
 				original: AccessTools.Method(typeof(CraftingPage), "performHoverAction"),
-				postfix: new HarmonyMethod(
-					typeof(CraftingPage_HoverAction),
-					nameof(CraftingPage_HoverAction.Postfix)));
+				postfix: new HarmonyMethod(typeof(HarmonyPatches), nameof(CraftingPage_HoverAction_Postfix)));
 			harmony.Patch(
 				original: AccessTools.Method(typeof(CraftingPage), "clickCraftingRecipe"),
-				prefix: new HarmonyMethod(
-					typeof(CraftingPage_ClickCraftingRecipe),
-					nameof(CraftingPage_ClickCraftingRecipe.Prefix)));
-			harmony.Patch(
-				original: AccessTools.Method(typeof(CraftingRecipe), "createItem"),
-				postfix: new HarmonyMethod(
-					typeof(CraftingRecipe_CreateItem),
-					nameof(CraftingRecipe_CreateItem.Postfix)));
+				prefix: new HarmonyMethod(typeof(HarmonyPatches), nameof(CraftingPage_ClickCraftingRecipe_Prefix)));
 		}
 
-		public class CraftingPage_HoverAction
+		internal static void CraftingRecipe_CreateItem_Postfix(CraftingRecipe __instance, Item __result)
 		{
-			internal static void Postfix(CraftingRecipe ___hoverRecipe)
-			{
-				if (___hoverRecipe == null)
-					return;
-				if (___hoverRecipe.name.Equals(ModValues.PropagatorInternalName))
-					___hoverRecipe.DisplayName = new Propagator().DisplayName;
-			}
+			// Intercept machine crafts with a Propagator subclass,
+			// rather than a generic nonfunctional craftable
+			if (__instance.name == ModValues.PropagatorInternalName)
+				__result = new Propagator(Game1.player.getTileLocation());
 		}
 
-		public class CraftingPage_ClickCraftingRecipe
+		internal static void CraftingPage_HoverAction_Postfix(CraftingRecipe ___hoverRecipe)
 		{
-			internal static bool Prefix(
-				List<Dictionary<ClickableTextureComponent, CraftingRecipe>> ___pagesOfCraftingRecipes,
-				int ___currentCraftingPage, Item ___heldItem,
-				ClickableTextureComponent c, bool playSound = true)
+			// Add display name in crafting pages
+			if (___hoverRecipe == null)
+				return;
+			if (___hoverRecipe.name.Equals(ModValues.PropagatorInternalName))
+				___hoverRecipe.DisplayName = new Propagator().DisplayName;
+		}
+
+		internal static bool CraftingPage_ClickCraftingRecipe_Prefix(
+			List<Dictionary<ClickableTextureComponent, CraftingRecipe>> ___pagesOfCraftingRecipes, int ___currentCraftingPage, Item ___heldItem,
+			ClickableTextureComponent c, bool playSound = true)
+		{
+			try
 			{
-				try
-				{
-					// Fetch an instance of any clicked-on craftable in the crafting menu
-					var tempItem = ___pagesOfCraftingRecipes[___currentCraftingPage][c]
-						.createItem();
+				// Fetch an instance of any clicked-on craftable in the crafting menu
+				var tempItem = ___pagesOfCraftingRecipes[___currentCraftingPage][c].createItem();
 
-					// Fall through the prefix for any craftables other than the Propagator
-					if (!tempItem.Name.Equals(ModValues.PropagatorInternalName))
-						return true;
-
-					// Behaviours as from base method
-					if (___heldItem == null)
-					{
-						___pagesOfCraftingRecipes[___currentCraftingPage][c]
-							.consumeIngredients(null);
-						___heldItem = tempItem;
-						if (playSound)
-							Game1.playSound("coin");
-					}
-					if (Game1.player.craftingRecipes.ContainsKey(___pagesOfCraftingRecipes[___currentCraftingPage][c].name))
-						Game1.player.craftingRecipes[___pagesOfCraftingRecipes[___currentCraftingPage][c].name]
-							+= ___pagesOfCraftingRecipes[___currentCraftingPage][c].numberProducedPerCraft;
-					if (___heldItem == null || !Game1.player.couldInventoryAcceptThisItem(___heldItem))
-						return false;
-
-					// Add the machine to the user's inventory
-					var prop = new Propagator(Game1.player.getTileLocation());
-					Game1.player.addItemToInventoryBool(prop);
-					___heldItem = null;
-					return false;
-				}
-				catch (Exception e)
-				{
-					Log.E($"{ModValues.AuthorName}.{ModValues.PackageName} failed in"
-					      + $" {nameof(CraftingPage_ClickCraftingRecipe)}.{nameof(Prefix)}"
-					      + $"\n{e}");
+				// Fall through the prefix for any craftables other than the Propagator
+				if (!tempItem.Name.Equals(ModValues.PropagatorInternalName))
 					return true;
-				}
-			}
-		}
 
-		public class CraftingRecipe_CreateItem
-		{
-			internal static void Postfix(CraftingRecipe __instance, Item __result)
+				// Behaviours as from base method
+				if (___heldItem == null)
+				{
+					___pagesOfCraftingRecipes[___currentCraftingPage][c].consumeIngredients(null);
+					___heldItem = tempItem;
+					if (playSound)
+						Game1.playSound("coin");
+				}
+				if (Game1.player.craftingRecipes.ContainsKey(___pagesOfCraftingRecipes[___currentCraftingPage][c].name))
+					Game1.player.craftingRecipes[___pagesOfCraftingRecipes[___currentCraftingPage][c].name]
+						+= ___pagesOfCraftingRecipes[___currentCraftingPage][c].numberProducedPerCraft;
+				if (___heldItem == null || !Game1.player.couldInventoryAcceptThisItem(___heldItem))
+					return false;
+
+				// Add the machine to the user's inventory
+				var prop = new Propagator(Game1.player.getTileLocation());
+				Game1.player.addItemToInventoryBool(prop);
+				___heldItem = null;
+				return false;
+			}
+			catch (Exception e)
 			{
-				// Intercept machine crafts with a Propagator subclass,
-				// rather than a generic nonfunctional craftable
-				if (__instance.name == ModValues.PropagatorInternalName)
-					__result = new Propagator(Game1.player.getTileLocation());
+				Log.E($"{ModValues.AuthorName}.{ModValues.PackageName} failed in {nameof(CraftingPage_ClickCraftingRecipe_Prefix)}"
+					    + $"\n{e}");
+				return true;
 			}
 		}
 	}

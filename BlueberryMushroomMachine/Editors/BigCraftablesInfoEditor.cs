@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using StardewModdingAPI;
+﻿using StardewModdingAPI;
+using System.Linq;
 
 namespace BlueberryMushroomMachine.Editors
 {

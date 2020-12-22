@@ -19,8 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="PyTK">
-      <HintPath>$(GamePath)\Mods\[CORE]\PyTK\PyTK.dll</HintPath>
+    <Reference Include="Automate">
+      <HintPath>$(GamePath)\Mods\[CORE]\Automate\Automate.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
