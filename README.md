@@ -26,7 +26,8 @@ The logs can only hold so many of each type of mushroom, though: the bigger and 
 Keep an eye out for logs with huge, fully-grown mushrooms: they've reached their capacity, and you'll need to pop them off to keep growing.
 
 ### ![](https://i.imgur.com/LuahOQY.png) Interacting
-Click while holding a mushroom to set it as the root-mushroom for an empty log. If the log's already got one, it'll pop off and swap to yours.  
+Click while holding a mushroom to set it as the root-mushroom for an empty log.  
+If the log's already got one, it'll pop off and swap to yours.  
 Click the log later on to pop any extra mushrooms off it, and click it again to pop the root-mushroom off.  
 Like the Casks in your cellar, you can whack them with an axe or a hoe to pop off the root-mushroom, too.
 
