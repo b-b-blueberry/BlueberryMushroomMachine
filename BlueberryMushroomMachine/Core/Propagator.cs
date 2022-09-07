@@ -45,7 +45,7 @@ namespace BlueberryMushroomMachine
 		
 		private void Initialise()
 		{
-			Log.D($"Initialise propagator at {TileLocation.ToString()}",
+			Log.D($"Initialise propagator at {TileLocation}",
 				ModEntry.Instance.Config.DebugMode);
 
 			Name = ModValues.PropagatorInternalName;

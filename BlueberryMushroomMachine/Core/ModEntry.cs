@@ -1,4 +1,5 @@
 ﻿using BlueberryMushroomMachine.Core;
+using BlueberryMushroomMachine.Editors;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
@@ -10,7 +11,7 @@ using Object = StardewValley.Object;
 
 namespace BlueberryMushroomMachine
 {
-	public class ModEntry : Mod
+	public sealed class ModEntry : Mod
 	{
 		public class SaveData
 		{
@@ -51,6 +52,9 @@ namespace BlueberryMushroomMachine
 
 			// Harmony setup
 			HarmonyPatches.Apply(this.ModManifest.UniqueID);
+
+            // Load textures
+            BigCraftablesTilesheetEditor.Initialize(helper.ModContent);
 		}
 
 		private void LoadApis()
@@ -95,9 +99,7 @@ namespace BlueberryMushroomMachine
 
             LoadApis();
 
-            // Identify the tilesheet index for the machine, and then continue
-            // to inject relevant data into multiple other assets if successful
-            AddObjectData();
+            this.Helper.Events.Content.AssetRequested += this.OnAssetRequested;
         }
 
         private void FixIds(object? sender, EventArgs e)
@@ -270,26 +272,14 @@ namespace BlueberryMushroomMachine
 			}
 		}
 
-		private void AddObjectData()
-		{
-			Log.D("Injecting object data.",
-				Config.DebugMode);
 
-			// Identify the index in bigCraftables for the machine
-			Helper.Content.AssetEditors.Add(new Editors.BigCraftablesInfoEditor());
-
-			// Edit all assets that rely on the new bigCraftables index:
-
-			// These can potentially input a bad index first, though BigCraftablesInfoEditor.Edit() will
-			// invalidate the cache once it finishes reassigning data with an appropriate index
-
-			// Inject recipe into the Craftables data sheet
-			Helper.Content.AssetEditors.Add(new Editors.CraftingRecipesEditor());
-			// Inject sprite into the Craftables tilesheet
-			Helper.Content.AssetEditors.Add(new Editors.BigCraftablesTilesheetEditor());
-			// Inject Demetrius' event
-			Helper.Content.AssetEditors.Add(new Editors.EventsEditor());
-		}
+        private void OnAssetRequested(object sender, AssetRequestedEventArgs e)
+        {
+            _ = BigCraftablesInfoEditor.ApplyEdit(e)
+                || BigCraftablesTilesheetEditor.ApplyEdit(e)
+                || CraftingRecipesEditor.ApplyEdit(e)
+                || EventsEditor.ApplyEdit(e); 
+        }
 
 		/// <summary>
 		/// Determines the frame to be used for showing held mushroom growth.
