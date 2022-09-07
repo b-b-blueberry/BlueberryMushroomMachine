@@ -87,7 +87,7 @@ namespace BlueberryMushroomMachine
 			minutesUntilReady.Value = 999999;
 
 			Log.D($"PutSourceMushroom(item: [{dropIn.ParentSheetIndex}] {dropIn.Name} Q{dropIn.Quality}), stack to {MaximumStack}" +
-				$" at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
+				$" at {Game1.currentLocation?.Name} {TileLocation}",
 				ModEntry.Instance.Config.DebugMode);
 		}
 
@@ -101,7 +101,7 @@ namespace BlueberryMushroomMachine
 
 		public bool PopByAction()
 		{
-			Log.D($"PopByAction at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
+			Log.D($"PopByAction at {Game1.currentLocation?.Name} {TileLocation}",
 				ModEntry.Instance.Config.DebugMode);
 			if (SourceMushroomIndex > 0)
 			{
@@ -113,7 +113,7 @@ namespace BlueberryMushroomMachine
 
 		public bool PopByTool()
 		{
-			Log.D($"PopByTool at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
+			Log.D($"PopByTool at {Game1.currentLocation?.Name} {TileLocation}",
 				ModEntry.Instance.Config.DebugMode);
 
 			if (SourceMushroomIndex > 0)
@@ -131,7 +131,7 @@ namespace BlueberryMushroomMachine
 
 		public void PopExtraHeldMushrooms(bool giveNothing)
 		{
-			Log.D($"PopExtraHeldMushrooms at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
+			Log.D($"PopExtraHeldMushrooms at {Game1.currentLocation?.Name} {TileLocation}",
 				ModEntry.Instance.Config.DebugMode);
 
 			// Incorporate Gatherer's skill effects for bonus production
@@ -167,7 +167,7 @@ namespace BlueberryMushroomMachine
 		{
 			Log.D($"PopExposedMushroom(forceRemoveSource: {forceRemoveSource})"
 				+ $" (item: [{SourceMushroomIndex}] {SourceMushroomName} Q{SourceMushroomQuality})" +
-				$" at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
+				$" at {Game1.currentLocation?.Name} {TileLocation}",
 				ModEntry.Instance.Config.DebugMode);
 
 			Game1.playSound("harvest");
@@ -204,7 +204,7 @@ namespace BlueberryMushroomMachine
 		/// </summary>
 		public void PopMachine()
 		{
-			Log.D($"PopMachine at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
+			Log.D($"PopMachine at {Game1.currentLocation?.Name} {TileLocation}",
 				ModEntry.Instance.Config.DebugMode);
 			var key = Game1.player.GetToolLocation() / 64f;
 			key.X = (int)key.X;
@@ -223,7 +223,7 @@ namespace BlueberryMushroomMachine
 		/// </summary>
 		internal void DayUpdate()
 		{
-			Log.D($"DayUpdate (item: [{SourceMushroomIndex}] {SourceMushroomName} Q{SourceMushroomQuality} at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
+			Log.D($"DayUpdate (item: [{SourceMushroomIndex}] {SourceMushroomName} Q{SourceMushroomQuality} at {Game1.currentLocation?.Name} {TileLocation}",
 				ModEntry.Instance.Config.DebugMode);
 
 			// Indexing inconsistencies with JA/CFR
@@ -311,7 +311,7 @@ namespace BlueberryMushroomMachine
 		/// <returns>Whether to continue with base behaviour.</returns>
 		public override bool performUseAction(GameLocation location)
 		{
-			Log.D($"performUseAction at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
+			Log.D($"performUseAction at {Game1.currentLocation?.Name} {TileLocation}",
 				ModEntry.Instance.Config.DebugMode);
 
 			return PopByAction();
@@ -324,7 +324,7 @@ namespace BlueberryMushroomMachine
 		/// <returns>Whether or not to continue with base behaviour.</returns>
 		public override bool performToolAction(Tool t, GameLocation location)
 		{
-			Log.D($"performToolAction at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
+			Log.D($"performToolAction at {Game1.currentLocation?.Name} {TileLocation}",
 				ModEntry.Instance.Config.DebugMode);
 
 			// Ignore usages that wouldn't trigger actions for other machines
@@ -357,6 +357,7 @@ namespace BlueberryMushroomMachine
                 return false;
             }
 
+            // Ignore things that are not mushrooms.
             if (dropIn is not Object obj || obj.bigCraftable.Value || !ModEntry.IsValidMushroom(obj))
             {
                 if (!probe)

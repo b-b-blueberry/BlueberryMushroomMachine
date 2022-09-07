@@ -135,11 +135,6 @@ namespace BlueberryMushroomMachine
 				Log.D("Loading data.", Config.DebugMode);
 				Data = Helper.Data.ReadSaveData<SaveData>("SaveData") ?? new SaveData();
 			}
-			else
-			{
-				Log.D("Saving data.", Config.DebugMode);
-				Helper.Data.WriteSaveData("SaveData", Data);
-			}
 
 			// Add Robin's pre-Demetrius-event dialogue
 			if (Game1.player.daysUntilHouseUpgrade.Value == 2 && Game1.player.HouseUpgradeLevel == 2)
@@ -162,7 +157,10 @@ namespace BlueberryMushroomMachine
                         propagator.DayUpdate();
                 }
             });
-		}
+
+            Log.D("Saving data.", Config.DebugMode);
+            Helper.Data.WriteSaveData("SaveData", Data);
+        }
 
 		private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
 		{
@@ -310,14 +308,19 @@ namespace BlueberryMushroomMachine
 				? new Rectangle(whichFrame * 16,  GetMushroomSourceRectIndex(index) * 32, 16, 32)
 				: Game1.getSourceRectForStandardTileSheet(Game1.objectSpriteSheet, index, 16, 16);
 		}
-		
-		public static bool IsValidMushroom(Object o)
-		{
-			return Enum.IsDefined(typeof(Mushrooms), o.ParentSheetIndex)
-			       || (o.Category == -75 || o.Category == -81)
-			       && (o.Name.Contains("mushroom", StringComparison.InvariantCultureIgnoreCase) || o.Name.Contains("fungus", StringComparison.InvariantCultureIgnoreCase))
-			       || Instance.Config.OtherObjectsThatCanBeGrown.Contains(o.Name);
-		}
+
+        public static bool IsValidMushroom(Object o)
+        {
+            // from the vanilla Utility.IsPerfectlyNormalObjectAtParentSheetIndex or whatever that method was again.
+            // Don't want to start growing wallpaper
+            if (o is null || o.GetType() != typeof(Object))
+                return false;
+
+            return Enum.IsDefined(typeof(Mushrooms), o.ParentSheetIndex)
+                   || (o.Category == -75 || o.Category == -81)
+                   && (o.Name.Contains("mushroom", StringComparison.InvariantCultureIgnoreCase) || o.Name.Contains("fungus", StringComparison.InvariantCultureIgnoreCase))
+                   || Instance.Config.OtherObjectsThatCanBeGrown.Contains(o.Name);
+        }
 
 		public static int GetMushroomSourceRectIndex(int index)
 		{
