@@ -1,14 +1,14 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using System.Xml.Serialization;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using StardewValley.Locations;
-using System;
-using System.Xml.Serialization;
 using Object = StardewValley.Object;
 
 namespace BlueberryMushroomMachine
 {
-	[XmlType("Mods_BlueberryMushroomMachine")]
+    [XmlType("Mods_BlueberryMushroomMachine")]
 	public class Propagator : StardewValley.Object
 	{
 		// Source mushroom (placed by player)
@@ -76,7 +76,7 @@ namespace BlueberryMushroomMachine
 		/// and resets all growth and harvest variables.
 		/// </summary>
 		/// <param name="dropIn">Some instance of an object, hopefully a mushroom.</param>
-		public void PutSourceMushroom(Item dropIn)
+		public void PutSourceMushroom(Object dropIn)
 		{
 			ModEntry.GetMushroomGrowthRate(dropIn as Object, out RateToMature);
 			ModEntry.GetMushroomMaximumQuantity(dropIn as Object, out MaximumStack);
@@ -286,7 +286,7 @@ namespace BlueberryMushroomMachine
 		public override bool checkForAction(Farmer who, bool justCheckingForActivity = false)
 		{
 			if (!justCheckingForActivity)
-				Log.D($"checkForAction at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
+				Log.D($"checkForAction at {Game1.currentLocation?.Name} {TileLocation}",
 					ModEntry.Instance.Config.DebugMode);
 			
 			if (!justCheckingForActivity && who != null
@@ -348,17 +348,56 @@ namespace BlueberryMushroomMachine
 		public override bool performObjectDropInAction(Item dropIn, bool probe, Farmer who)
 		{
 			if (!probe)
-				Log.D($"performObjectDropInAction(dropIn:{dropIn?.Name ?? "null"}) at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
+				Log.D($"performObjectDropInAction(dropIn:{dropIn?.Name ?? "null"}) at {Game1.currentLocation?.Name} {TileLocation}",
 					ModEntry.Instance.Config.DebugMode);
 
-			// Ignore usages with inappropriate items
-			if (dropIn == null)
-			{
-				return false;
-			}
+            // Ignore usages with inappropriate items
+            if (dropIn == null)
+            {
+                return false;
+            }
 
-			// Extract held mushrooms prematurely
-			if (!probe && SourceMushroomIndex > 0)
+            if (dropIn is not Object obj || obj.bigCraftable.Value || !ModEntry.IsValidMushroom(obj))
+            {
+                if (!probe)
+                    Log.D($"Invalid mushroom: [{dropIn.ParentSheetIndex}] {dropIn.Name}",
+                        ModEntry.Instance.Config.DebugMode);
+                return false;
+            }
+
+            // Ignore Truffles
+            if (Utility.IsNormalObjectAtParentSheetIndex(obj, 430))
+            {
+                if (!probe)
+                    Game1.showRedMessage(ModEntry.Instance.i18n.Get("error.truffle"));
+                return false;
+            }
+
+            // Determine if being used in an appropriate location
+            if (who != null)
+            {
+                var flag = (who.currentLocation is Cellar && ModEntry.Instance.Config.WorksInCellar)
+                            || (who.currentLocation is FarmCave && ModEntry.Instance.Config.WorksInFarmCave)
+                            || (who.currentLocation is BuildableGameLocation && ModEntry.Instance.Config.WorksInBuildings)
+                            || (who.currentLocation is FarmHouse && ModEntry.Instance.Config.WorksInFarmHouse)
+                            || (who.currentLocation.IsGreenhouse && ModEntry.Instance.Config.WorksInGreenhouse)
+                            || (who.currentLocation.IsOutdoors && ModEntry.Instance.Config.WorksOutdoors);
+
+                if (!flag)
+                {
+                    // Ignore bad machine locations
+                    if (!probe)
+                        Game1.showRedMessage(ModEntry.Instance.i18n.Get("error.location"));
+                    return false;
+                }
+            }
+
+            // don't make state changes if just checking.
+            if (probe)
+                return true;
+
+            // Extract held mushrooms prematurely
+            if (SourceMushroomIndex > 0)
 			{
 				if (heldObject.Value != null)
 				{
@@ -372,44 +411,8 @@ namespace BlueberryMushroomMachine
 				}
 			}
 
-			// Determine if being used in an appropriate location
-			if (!probe && who != null)
-			{
-				var flag = (who.currentLocation is Cellar && ModEntry.Instance.Config.WorksInCellar)
-				            || (who.currentLocation is FarmCave && ModEntry.Instance.Config.WorksInFarmCave)
-				            || (who.currentLocation is BuildableGameLocation && ModEntry.Instance.Config.WorksInBuildings)
-				            || (who.currentLocation is FarmHouse && ModEntry.Instance.Config.WorksInFarmHouse)
-				            || (who.currentLocation.IsGreenhouse && ModEntry.Instance.Config.WorksInGreenhouse)
-				            || (who.currentLocation.IsOutdoors && ModEntry.Instance.Config.WorksOutdoors);
-
-				if (!flag)
-				{
-					// Ignore bad machine locations
-					Game1.showRedMessage(ModEntry.Instance.i18n.Get("error.location"));
-					return false;
-				}
-			}
-			
-			// Ignore Truffles
-			if (!probe && dropIn.ParentSheetIndex.Equals(430))
-			{
-				Game1.showRedMessage(ModEntry.Instance.i18n.Get("error.truffle"));
-				return false;
-			}
-
-			if (!(dropIn is Object o) || !ModEntry.IsValidMushroom(o))
-			{
-				if (!probe)
-					Log.D($"Invalid mushroom: [{dropIn.ParentSheetIndex}] {dropIn.Name}",
-						ModEntry.Instance.Config.DebugMode);
-				return false;
-			}
-
-			if (probe)
-				return true;
-
 			// Accept the deposited item as the new source mushroom
-			PutSourceMushroom(dropIn);
+			PutSourceMushroom(obj);
 			who?.currentLocation.playSound("Ship");
 			return true;
 		}

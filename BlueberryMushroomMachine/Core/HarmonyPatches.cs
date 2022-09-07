@@ -1,4 +1,4 @@
-﻿using Harmony; // el diavolo
+﻿using HarmonyLib; // el diavolo
 using StardewValley;
 using StardewValley.Menus;
 using System;
@@ -10,7 +10,7 @@ namespace BlueberryMushroomMachine
 	{
 		public static void Apply()
 		{
-			var harmony = HarmonyInstance.Create($"{ModValues.AuthorName}.{ModValues.PackageName}");
+			var harmony = new Harmony($"{ModValues.AuthorName}.{ModValues.PackageName}");
 
 			harmony.Patch(
 				original: AccessTools.Method(typeof(CraftingRecipe), "createItem"),

@@ -224,7 +224,7 @@ namespace BlueberryMushroomMachine
 						}
 
 						++rebuiltObjectsCount;
-						Log.D($"Found a broken Propagator in {location.Name}'s objects at {key.ToString()}, rebuilding manually.",
+						Log.D($"Found a broken Propagator in {location.Name}'s objects at {key}, rebuilding manually.",
 							Config.DebugMode);
 
 						location.Objects[key] = replacement;
@@ -271,8 +271,7 @@ namespace BlueberryMushroomMachine
 				(((quantity - 1) + ((float)currentDays / goalDays)) * goalDays)
 				/ ((max - 1) * goalDays)
 				* ModValues.OverlayMushroomFrames;
-			maths = Math.Max(0, Math.Min(ModValues.OverlayMushroomFrames, maths));
-			return (int)Math.Floor(maths);
+            return Math.Clamp((int)maths, 0, ModValues.OverlayMushroomFrames);
 		}
 
 		/// <summary>
