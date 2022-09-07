@@ -78,15 +78,15 @@ namespace BlueberryMushroomMachine
 		/// <param name="dropIn">Some instance of an object, hopefully a mushroom.</param>
 		public void PutSourceMushroom(Object dropIn)
 		{
-			ModEntry.GetMushroomGrowthRate(dropIn as Object, out RateToMature);
-			ModEntry.GetMushroomMaximumQuantity(dropIn as Object, out MaximumStack);
+			ModEntry.GetMushroomGrowthRate(dropIn, out RateToMature);
+			ModEntry.GetMushroomMaximumQuantity(dropIn, out MaximumStack);
 			SourceMushroomName = dropIn.Name;
 			SourceMushroomIndex = dropIn.ParentSheetIndex;
-			SourceMushroomQuality = (dropIn as Object).Quality;
+			SourceMushroomQuality = dropIn.Quality;
 			DaysToMature = 0;
 			minutesUntilReady.Value = 999999;
 
-			Log.D($"PutSourceMushroom(item: [{dropIn.ParentSheetIndex}] {dropIn.Name} Q{(dropIn as Object).Quality}), stack to {MaximumStack}" +
+			Log.D($"PutSourceMushroom(item: [{dropIn.ParentSheetIndex}] {dropIn.Name} Q{dropIn.Quality}), stack to {MaximumStack}" +
 				$" at {Game1.currentLocation?.Name} {TileLocation.ToString()}",
 				ModEntry.Instance.Config.DebugMode);
 		}

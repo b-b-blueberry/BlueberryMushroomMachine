@@ -8,9 +8,9 @@ namespace BlueberryMushroomMachine
 {
 	internal class HarmonyPatches
 	{
-		public static void Apply()
+		public static void Apply(string uniqueID)
 		{
-			var harmony = new Harmony($"{ModValues.AuthorName}.{ModValues.PackageName}");
+			var harmony = new Harmony(uniqueID);
 
 			harmony.Patch(
 				original: AccessTools.Method(typeof(CraftingRecipe), "createItem"),
