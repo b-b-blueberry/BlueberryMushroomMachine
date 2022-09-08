@@ -9,7 +9,7 @@ namespace BlueberryMushroomMachine.Editors
 {
     internal static class BigCraftablesTilesheetEditor
 	{
-        static IRawTextureData tex;
+        private static IRawTextureData tex;
         internal static void Initialize(IModContentHelper helper)
         {
             tex = helper.Load<IRawTextureData>(ModValues.MachinePath);

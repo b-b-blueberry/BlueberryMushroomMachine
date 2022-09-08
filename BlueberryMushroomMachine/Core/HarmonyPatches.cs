@@ -41,7 +41,7 @@ namespace BlueberryMushroomMachine
 		}
 
 		internal static bool CraftingPage_ClickCraftingRecipe_Prefix(
-			List<Dictionary<ClickableTextureComponent, CraftingRecipe>> ___pagesOfCraftingRecipes, int ___currentCraftingPage, Item ___heldItem,
+			List<Dictionary<ClickableTextureComponent, CraftingRecipe>> ___pagesOfCraftingRecipes, int ___currentCraftingPage, ref Item ___heldItem,
 			ClickableTextureComponent c, bool playSound = true)
 		{
 			try
