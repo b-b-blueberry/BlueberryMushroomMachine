@@ -45,8 +45,11 @@ namespace BlueberryMushroomMachine
 		
 		private void Initialise()
 		{
-			Log.D($"Initialise propagator at {TileLocation}",
-				ModEntry.Instance.Config.DebugMode);
+            if (ModEntry.Instance.Config.DebugMode)
+            {
+                Log.D($"Initialise propagator at {TileLocation}",
+                    ModEntry.Instance.Config.DebugMode);
+            }
 
 			Name = ModValues.PropagatorInternalName;
 			ParentSheetIndex = ModValues.PropagatorIndex;
@@ -165,10 +168,13 @@ namespace BlueberryMushroomMachine
 		/// </param>
 		public void PopExposedMushroom(bool forceRemoveSource)
 		{
-			Log.D($"PopExposedMushroom(forceRemoveSource: {forceRemoveSource})"
-				+ $" (item: [{SourceMushroomIndex}] {SourceMushroomName} Q{SourceMushroomQuality})" +
-				$" at {Game1.currentLocation?.Name} {TileLocation}",
-				ModEntry.Instance.Config.DebugMode);
+            if (ModEntry.Instance.Config.DebugMode)
+            {
+                Log.D($"PopExposedMushroom(forceRemoveSource: {forceRemoveSource})"
+                    + $" (item: [{SourceMushroomIndex}] {SourceMushroomName} Q{SourceMushroomQuality})" +
+                    $" at {Game1.currentLocation?.Name} {TileLocation}",
+                    ModEntry.Instance.Config.DebugMode);
+            }
 
 			Game1.playSound("harvest");
 			var popSource = forceRemoveSource || heldObject.Value == null;
@@ -357,20 +363,20 @@ namespace BlueberryMushroomMachine
                 return false;
             }
 
+            // Ignore Truffles
+            if (Utility.IsNormalObjectAtParentSheetIndex(obj, 430))
+            {
+                if (!probe)
+                    Game1.showRedMessage(ModEntry.Instance.i18n.Get("error.truffle"));
+                return false;
+            }
+
             // Ignore things that are not mushrooms.
             if (dropIn is not Object obj || obj.bigCraftable.Value || !ModEntry.IsValidMushroom(obj))
             {
                 if (!probe)
                     Log.D($"Invalid mushroom: [{dropIn.ParentSheetIndex}] {dropIn.Name}",
                         ModEntry.Instance.Config.DebugMode);
-                return false;
-            }
-
-            // Ignore Truffles
-            if (Utility.IsNormalObjectAtParentSheetIndex(obj, 430))
-            {
-                if (!probe)
-                    Game1.showRedMessage(ModEntry.Instance.i18n.Get("error.truffle"));
                 return false;
             }
 

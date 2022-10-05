@@ -5,6 +5,8 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Objects;
+
 using System;
 using System.Linq;
 using Object = StardewValley.Object;
@@ -313,7 +315,8 @@ namespace BlueberryMushroomMachine
         {
             // from the vanilla Utility.IsPerfectlyNormalObjectAtParentSheetIndex or whatever that method was again.
             // Don't want to start growing wallpaper
-            if (o is null || o.GetType() != typeof(Object))
+            Type type = o.GetType();
+            if (o is null || (type != typeof(Object) && type != typeof(ColoredObject)))
                 return false;
 
             return Enum.IsDefined(typeof(Mushrooms), o.ParentSheetIndex)
