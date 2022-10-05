@@ -364,7 +364,7 @@ namespace BlueberryMushroomMachine
             }
 
             // Ignore Truffles
-            if (Utility.IsNormalObjectAtParentSheetIndex(obj, 430))
+            if (Utility.IsNormalObjectAtParentSheetIndex(dropIn, 430))
             {
                 if (!probe)
                     Game1.showRedMessage(ModEntry.Instance.i18n.Get("error.truffle"));
@@ -383,14 +383,13 @@ namespace BlueberryMushroomMachine
             // Determine if being used in an appropriate location
             if (who != null)
             {
-                var flag = (who.currentLocation is Cellar && ModEntry.Instance.Config.WorksInCellar)
+
+                if (!((who.currentLocation is Cellar && ModEntry.Instance.Config.WorksInCellar)
                             || (who.currentLocation is FarmCave && ModEntry.Instance.Config.WorksInFarmCave)
                             || (who.currentLocation is BuildableGameLocation && ModEntry.Instance.Config.WorksInBuildings)
                             || (who.currentLocation is FarmHouse && ModEntry.Instance.Config.WorksInFarmHouse)
                             || (who.currentLocation.IsGreenhouse && ModEntry.Instance.Config.WorksInGreenhouse)
-                            || (who.currentLocation.IsOutdoors && ModEntry.Instance.Config.WorksOutdoors);
-
-                if (!flag)
+                            || (who.currentLocation.IsOutdoors && ModEntry.Instance.Config.WorksOutdoors)))
                 {
                     // Ignore bad machine locations
                     if (!probe)
