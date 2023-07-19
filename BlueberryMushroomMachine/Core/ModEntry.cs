@@ -23,13 +23,11 @@ namespace BlueberryMushroomMachine
 			Purple = 422
 		}
 
-		internal static ModEntry Instance;
-		internal static Config Config;
-		internal static ITranslationHelper I18n => ModEntry.Instance.Helper.Translation;
+		public static ModEntry Instance { get; private set; }
+		public static Config Config { get; private set; }
+		public static ITranslationHelper I18n => ModEntry.Instance.Helper.Translation;
+		public static Texture2D OverlayTexture { get; private set; }
 
-		public static Texture2D OverlayTexture { get => ModEntry._overlayTexture; }
-
-		private static Texture2D _overlayTexture;
 		private static IJsonAssetsAPI _jsonAssetsAPI;
 
 		public override void Entry(IModHelper helper)
@@ -44,7 +42,7 @@ namespace BlueberryMushroomMachine
 			this.Helper.Events.GameLoop.ReturnedToTitle += this.OnTitleScreen;
 
 			// Load mushroom overlay texture for all filled machines
-			ModEntry._overlayTexture = this.Helper.ModContent.Load<Texture2D>(ModValues.OverlayPath);
+			ModEntry.OverlayTexture = this.Helper.ModContent.Load<Texture2D>(ModValues.OverlayPath);
 
 			// Harmony setup
 			HarmonyPatches.Apply(uniqueID: this.ModManifest.UniqueID);
