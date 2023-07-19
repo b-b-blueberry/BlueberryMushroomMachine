@@ -40,7 +40,7 @@ namespace BlueberryMushroomMachine.Editors
 				ModEntry.Config.DebugMode);
 
 			// Inject custom object data with appending index
-			ModValues.ObjectData = string.Format(ModValues.ObjectData,
+			ModValues.ObjectData = string.Format(ModValues.ObjectDataFormat,
 				ModValues.PropagatorInternalName,
 				ModEntry.I18n.Get("machine.desc"));
 
@@ -54,7 +54,7 @@ namespace BlueberryMushroomMachine.Editors
 			}
 
 			// Update not-yet-injected crafting recipe data to match
-			ModValues.CraftingRecipeData = string.Format(ModValues.CraftingRecipeData,
+			ModValues.RecipeData = string.Format(ModValues.RecipeDataFormat,
 				ModValues.PropagatorIndex);
 
 			Log.D($"Object injected: \"{ModValues.PropagatorIndex}\": " +

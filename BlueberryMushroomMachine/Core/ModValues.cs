@@ -21,9 +21,12 @@ namespace BlueberryMushroomMachine
 			= Path.Combine("assets", "events.json");
 
 		// Objects
+		public const string ObjectDataFormat = "{0}/0/-300/Crafting -9/{1}/true/true/0";
+		public const string RecipeDataFormat = "388 20 709 1/Home/{0}/true/null";
+
 		public static int PropagatorIndex = 0;
-		public static string ObjectData = "{0}/0/-300/Crafting -9/{1}/true/true/0";
-		public static string CraftingRecipeData = "388 20 709 1/Home/{0}/true/null";
+		public static string ObjectData = null;
+		public static string RecipeData = null;
 
 		public const int OverlayMushroomFrames = 3;
 

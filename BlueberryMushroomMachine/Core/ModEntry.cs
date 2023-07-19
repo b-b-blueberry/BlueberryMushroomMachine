@@ -42,6 +42,7 @@ namespace BlueberryMushroomMachine
 
 			this.Helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
 			this.Helper.Events.GameLoop.DayStarted += this.OnDayStarted;
+			this.Helper.Events.GameLoop.ReturnedToTitle += this.OnTitleScreen;
 
 			// Load mushroom overlay texture for all filled machines
 			ModEntry._overlayTexture = this.Helper.ModContent.Load<Texture2D>(ModValues.OverlayPath);
@@ -190,6 +191,13 @@ namespace BlueberryMushroomMachine
 				|| BigCraftablesTilesheetEditor.ApplyEdit(e)
 				|| CraftingRecipesEditor.ApplyEdit(e)
 				|| EventsEditor.ApplyEdit(e);
+		}
+
+		private void OnTitleScreen(object sender, ReturnedToTitleEventArgs e)
+		{
+			ModValues.PropagatorIndex = 0;
+			ModValues.ObjectData = null;
+			ModValues.RecipeData = null;
 		}
 
 		/// <summary>
