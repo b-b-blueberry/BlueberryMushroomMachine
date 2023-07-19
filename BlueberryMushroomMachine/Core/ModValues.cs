@@ -23,6 +23,9 @@ namespace BlueberryMushroomMachine
 		// Console
 		public static readonly string SpawnConsoleCommand
 			= "bb.bmm.spawn";
+		public static readonly string FixIdsConsoleCommand
+			= "bb.bmm.fix_ids";
+
 		// Objects
 		public const string ObjectDataFormat = "{0}/0/-300/Crafting -9/{1}/true/true/0";
 		public const string RecipeDataFormat = "388 20 709 1/Home/{0}/true/null";

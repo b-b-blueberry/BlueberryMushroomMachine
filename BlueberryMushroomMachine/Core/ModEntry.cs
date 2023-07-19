@@ -164,6 +164,8 @@ namespace BlueberryMushroomMachine
 
 		private void RegisterConsoleCommands()
 		{
+			// Commands usable by all players
+
 			this.Helper.ConsoleCommands.Add(
 				name: ModValues.SpawnConsoleCommand,
 				documentation: "Add one (or a given number of) mushroom propagator(s) to your inventory.",
@@ -178,6 +180,16 @@ namespace BlueberryMushroomMachine
 					Log.D($"{Game1.player.Name} spawned in a"
 						  + $" [{ModValues.PropagatorIndex}] {ModValues.PropagatorInternalName} ({propagator.DisplayName}).");
 				});
+
+			// Commands usable when debugging
+
+			if (ModEntry.Config.DebugMode)
+			{
+				this.Helper.ConsoleCommands.Add(
+					name: ModValues.FixIdsConsoleCommand,
+					documentation: "DEBUG: Manually fix IDs of objects held by mushroom propagators.",
+					callback: (string cmd, string[] args) => this.FixIds());
+			}
 		}
 
 		private void OnAssetRequested(object sender, AssetRequestedEventArgs e)
