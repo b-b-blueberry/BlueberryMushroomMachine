@@ -24,8 +24,8 @@ namespace BlueberryMushroomMachine
 		}
 
 		internal static ModEntry Instance;
-		internal Config Config;
-		internal ITranslationHelper I18n => this.Helper.Translation;
+		internal static Config Config;
+		internal static ITranslationHelper I18n => ModEntry.Instance.Helper.Translation;
 
 		public static Texture2D OverlayTexture { get => ModEntry._overlayTexture; }
 
@@ -34,10 +34,10 @@ namespace BlueberryMushroomMachine
 
 		public override void Entry(IModHelper helper)
 		{
-			Instance = this;
-			this.Config = helper.ReadConfig<Config>();
+			ModEntry.Instance = this;
+			ModEntry.Config = helper.ReadConfig<Config>();
 
-			if (this.Config.DebugMode)
+			if (ModEntry.Config.DebugMode)
 				helper.Events.Input.ButtonPressed += this.OnButtonPressed;
 
 			this.Helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
@@ -63,7 +63,7 @@ namespace BlueberryMushroomMachine
 			if (ModEntry._jsonAssetsAPI is null)
 			{
 				Log.D($"Json Assets not found, deshuffling will not happen",
-					this.Config.DebugMode);
+					ModEntry.Config.DebugMode);
 			}
 			else
 			{
@@ -75,22 +75,22 @@ namespace BlueberryMushroomMachine
 		{
 			try
 			{
-				if (this.Config.DebugMode)
+				if (ModEntry.Config.DebugMode)
 				{
 					Log.D("== CONFIG SUMMARY ==\n"
 						  + "\nWorks in locations:"
-						  + $"\n    {this.Config.WorksInCellar} {this.Config.WorksInFarmCave} {this.Config.WorksInBuildings}"
-						  + $"\n    {this.Config.WorksInFarmHouse} {this.Config.WorksInGreenhouse} {this.Config.WorksOutdoors}\n"
-						  + $"\nMushroom Cave:  {this.Config.DisabledForFruitCave}"
-						  + $"\nRecipe Cheat:   {this.Config.RecipeAlwaysAvailable}"
-						  + $"\nQuantity Cheat: {this.Config.MaximumQuantityLimitsDoubled}"
-						  + $"\nDays To Mature: {this.Config.MaximumDaysToMature}"
-						  + $"\nGrowth Pulse:   {this.Config.PulseWhenGrowing}"
-						  + $"\nOnly Tools Pop: {this.Config.OnlyToolsCanRemoveRootMushrooms}"
-						  + $"\nCustom Objects: {this.Config.OtherObjectsThatCanBeGrown.Aggregate("", (s, s1) => $"{s}\n    {s1}")}\n"
+						  + $"\n    {ModEntry.Config.WorksInCellar} {ModEntry.Config.WorksInFarmCave} {ModEntry.Config.WorksInBuildings}"
+						  + $"\n    {ModEntry.Config.WorksInFarmHouse} {ModEntry.Config.WorksInGreenhouse} {ModEntry.Config.WorksOutdoors}\n"
+						  + $"\nMushroom Cave:  {ModEntry.Config.DisabledForFruitCave}"
+						  + $"\nRecipe Cheat:   {ModEntry.Config.RecipeAlwaysAvailable}"
+						  + $"\nQuantity Cheat: {ModEntry.Config.MaximumQuantityLimitsDoubled}"
+						  + $"\nDays To Mature: {ModEntry.Config.MaximumDaysToMature}"
+						  + $"\nGrowth Pulse:   {ModEntry.Config.PulseWhenGrowing}"
+						  + $"\nOnly Tools Pop: {ModEntry.Config.OnlyToolsCanRemoveRootMushrooms}"
+						  + $"\nCustom Objects: {ModEntry.Config.OtherObjectsThatCanBeGrown.Aggregate("", (s, s1) => $"{s}\n    {s1}")}\n"
 						  + $"\nLanguage:       {LocalizedContentManager.CurrentLanguageCode.ToString().ToUpper()}"
-						  + $"\nDebugging:      {this.Config.DebugMode}",
-						this.Config.DebugMode);
+						  + $"\nDebugging:      {ModEntry.Config.DebugMode}",
+						ModEntry.Config.DebugMode);
 				}
 			}
 			catch (Exception ex)
@@ -138,13 +138,13 @@ namespace BlueberryMushroomMachine
 			}
 
 			// Update player recipes
-			if (this.Config.RecipeAlwaysAvailable
+			if (ModEntry.Config.RecipeAlwaysAvailable
 				&& !Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorInternalName))
 			{
 				// Add the Propagator crafting recipe if the cheat is enabled
 				Game1.player.craftingRecipes.Add(ModValues.PropagatorInternalName, 0);
 			}
-			else if (!this.Config.RecipeAlwaysAvailable
+			else if (!ModEntry.Config.RecipeAlwaysAvailable
 				&& !Game1.player.eventsSeen.Contains(ModValues.EventId)
 				&& Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorInternalName))
 			{
@@ -239,7 +239,7 @@ namespace BlueberryMushroomMachine
 			}
 
 			return Enum.IsDefined(enumType: typeof(Mushrooms), value: o.ParentSheetIndex)
-				|| Instance.Config.OtherObjectsThatCanBeGrown.Contains(o.Name)
+				|| ModEntry.Config.OtherObjectsThatCanBeGrown.Contains(o.Name)
 				|| ((o.Category == Object.VegetableCategory || o.Category == Object.GreensCategory)
 					&& (o.Name.Contains("mushroom", StringComparison.InvariantCultureIgnoreCase)
 						|| o.Name.Contains("fungus", StringComparison.InvariantCultureIgnoreCase)));
@@ -282,7 +282,7 @@ namespace BlueberryMushroomMachine
 				(int)Mushrooms.Purple => 2,
 				_ => o.Price < 50 ? 5 : o.Price < 100 ? 4 : o.Price < 200 ? 3 : 2
 			};
-			quantity *= Instance.Config.MaximumQuantityLimitsDoubled ? 2 : 1;
+			quantity *= ModEntry.Config.MaximumQuantityLimitsDoubled ? 2 : 1;
 		}
 	}
 }

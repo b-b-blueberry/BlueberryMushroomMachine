@@ -22,7 +22,7 @@ namespace BlueberryMushroomMachine.Editors
 		public static void EditImpl(IAssetData asset)
 		{
 			Log.T($"Editing {asset.Name}.",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 
 			IDictionary<int, string> data = asset.AsDictionary<int, string>().Data;
 
@@ -37,12 +37,12 @@ namespace BlueberryMushroomMachine.Editors
 			ModValues.PropagatorIndex = index;
 
 			Log.D($"Object indexed:  {ModValues.PropagatorIndex}",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 
 			// Inject custom object data with appending index
 			ModValues.ObjectData = string.Format(ModValues.ObjectData,
 				ModValues.PropagatorInternalName,
-				ModEntry.Instance.I18n.Get("machine.desc"));
+				ModEntry.I18n.Get("machine.desc"));
 
 			if (!data.ContainsKey(ModValues.PropagatorIndex))
 			{
@@ -59,11 +59,11 @@ namespace BlueberryMushroomMachine.Editors
 
 			Log.D($"Object injected: \"{ModValues.PropagatorIndex}\": " +
 				  $"\"{data[ModValues.PropagatorIndex]}\"",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 
 			if (BigCraftablesInfoEditor.LastIndexedValue != index)
 			{
-				Log.D("Invalidating cache for ID change", ModEntry.Instance.Config.DebugMode);
+				Log.D("Invalidating cache for ID change", ModEntry.Config.DebugMode);
 				// Invalidate cache of possibly-badly-indexed data
 				ModEntry.Instance.Helper.GameContent.InvalidateCache(@"Data/Events/Farm");
 				ModEntry.Instance.Helper.GameContent.InvalidateCache(@"Data/CraftingRecipes");

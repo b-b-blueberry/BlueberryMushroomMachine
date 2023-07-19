@@ -25,7 +25,7 @@ namespace BlueberryMushroomMachine.Editors
 		public static void EditImpl(IAssetData asset)
 		{
 			Log.T($"Editing {asset.Name}.",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 
 			// Expand the base tilesheet if needed.
 			IRawTextureData src = BigCraftablesTilesheetEditor.TextureData;

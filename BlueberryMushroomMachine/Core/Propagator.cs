@@ -34,7 +34,7 @@ namespace BlueberryMushroomMachine
 		{
 			this.TileLocation = tileLocation;
 			this.Initialise();
-			this.DefaultDaysToMature = ModEntry.Instance.Config.MaximumDaysToMature;
+			this.DefaultDaysToMature = ModEntry.Config.MaximumDaysToMature;
 		}
 
 		protected override string loadDisplayName()
@@ -44,7 +44,7 @@ namespace BlueberryMushroomMachine
 
 		public override string getDescription()
 		{
-			return ModEntry.Instance.I18n.Get("machine.desc");
+			return ModEntry.I18n.Get("machine.desc");
 		}
 
 		/// <summary>
@@ -52,7 +52,7 @@ namespace BlueberryMushroomMachine
 		/// </summary>
 		private void Initialise()
 		{
-			if (ModEntry.Instance.Config.DebugMode)
+			if (ModEntry.Config.DebugMode)
 			{
 				Log.D($"Initialise [{ModValues.PropagatorIndex}] {ModValues.PropagatorInternalName} at {this.TileLocation}",
 					ModEntry.Config.DebugMode);
@@ -101,7 +101,7 @@ namespace BlueberryMushroomMachine
 
 			Log.D($"PutSourceMushroom(item: [{dropIn.ParentSheetIndex}] {dropIn.Name} Q{dropIn.Quality}), stack to {this.MaximumStack}" +
 				$" at {Game1.currentLocation?.Name} {this.TileLocation}",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 		}
 
 		public void PutExtraHeldMushroom(float daysToMature)
@@ -115,7 +115,7 @@ namespace BlueberryMushroomMachine
 		public bool PopByAction()
 		{
 			Log.D($"PopByAction at {Game1.currentLocation?.Name} {this.TileLocation}",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 			if (this.SourceMushroomIndex > 0)
 			{
 				this.PopExposedMushroom(forceRemoveSource: false);
@@ -127,7 +127,7 @@ namespace BlueberryMushroomMachine
 		public bool PopByTool()
 		{
 			Log.D($"PopByTool at {Game1.currentLocation?.Name} {this.TileLocation}",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 
 			if (this.SourceMushroomIndex > 0)
 			{
@@ -145,7 +145,7 @@ namespace BlueberryMushroomMachine
 		public void PopExtraHeldMushrooms(bool giveNothing)
 		{
 			Log.D($"PopExtraHeldMushrooms at {Game1.currentLocation?.Name} {this.TileLocation}",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 
 			// Incorporate Gatherer's skill effects for bonus quantity
 			int popQuantity = this.heldObject.Value.Stack;
@@ -188,7 +188,7 @@ namespace BlueberryMushroomMachine
 		/// </param>
 		public void PopExposedMushroom(bool forceRemoveSource)
 		{
-			if (ModEntry.Instance.Config.DebugMode)
+			if (ModEntry.Config.DebugMode)
 			{
 				Log.D($"PopExposedMushroom(forceRemoveSource: {forceRemoveSource})"
 					+ $" (item:" +
@@ -197,7 +197,7 @@ namespace BlueberryMushroomMachine
 					$" Q{this.SourceMushroomQuality})" +
 					$" ({this.DaysToMature}/{this.DefaultDaysToMature} days +{this.RateToMature})" +
 					$" at {Game1.currentLocation?.Name} {this.TileLocation}",
-					ModEntry.Instance.Config.DebugMode);
+					ModEntry.Config.DebugMode);
 			}
 
 			Game1.playSound("harvest");
@@ -214,7 +214,7 @@ namespace BlueberryMushroomMachine
 			if (popSource)
 			{
 				Log.D("PopExposed source",
-					ModEntry.Instance.Config.DebugMode);
+					ModEntry.Config.DebugMode);
 				Object o = new (parentSheetIndex: this.SourceMushroomIndex, initialStack: 1)
 				{
 					Quality = SourceMushroomQuality
@@ -240,7 +240,7 @@ namespace BlueberryMushroomMachine
 		public void PopMachine()
 		{
 			Log.D($"PopMachine at {Game1.currentLocation?.Name} {this.TileLocation}",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 			Vector2 toolPosition = Game1.player.GetToolLocation();
 			Vector2 propagatorPosition = this.boundingBox.Center.ToVector2();
 			Vector2 key = Vector2.Floor(toolPosition / Game1.tileSize);
@@ -262,7 +262,7 @@ namespace BlueberryMushroomMachine
 				$" Q{this.SourceMushroomQuality}" +
 				$" ({this.DaysToMature}/{this.DefaultDaysToMature} days +{this.RateToMature})" +
 				$" at {location.Name} {this.TileLocation}",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 
 			// Indexing inconsistencies with JA/CFR
 			this.ParentSheetIndex = ModValues.PropagatorIndex;
@@ -284,7 +284,7 @@ namespace BlueberryMushroomMachine
 				// Set the extra mushroom object
 				this.PutExtraHeldMushroom(daysToMature: 0);
 				Log.D("==> Set first extra mushroom",
-					ModEntry.Instance.Config.DebugMode);
+					ModEntry.Config.DebugMode);
 				return;
 			}
 			else
@@ -293,7 +293,7 @@ namespace BlueberryMushroomMachine
 				if (this.heldObject.Value.Stack >= this.MaximumStack)
 				{
 					Log.D("==> Reached max stack size, ready for harvest",
-						ModEntry.Instance.Config.DebugMode);
+						ModEntry.Config.DebugMode);
 					this.MinutesUntilReady = 0;
 					this.readyForHarvest.Value = true;
 					return;
@@ -312,7 +312,7 @@ namespace BlueberryMushroomMachine
 			}
 			Log.D($"==> Grown to {this.heldObject.Value.Stack}/{this.MaximumStack}" +
 				$" ({this.DaysToMature}/{this.DefaultDaysToMature} days +{this.RateToMature})",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 		}
 
 		/// <summary>
@@ -327,7 +327,7 @@ namespace BlueberryMushroomMachine
 			if (!justCheckingForActivity)
 			{
 				Log.D($"checkForAction at {Game1.currentLocation?.Name} {this.TileLocation}",
-					ModEntry.Instance.Config.DebugMode);
+					ModEntry.Config.DebugMode);
 			}
 
 			Point tile = new(x: who.getTileX(), y: who.getTileY());
@@ -356,7 +356,7 @@ namespace BlueberryMushroomMachine
 		public override bool performUseAction(GameLocation location)
 		{
 			Log.D($"performUseAction at {Game1.currentLocation?.Name} {this.TileLocation}",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 
 			return this.PopByAction();
 		}
@@ -369,7 +369,7 @@ namespace BlueberryMushroomMachine
 		public override bool performToolAction(Tool t, GameLocation location)
 		{
 			Log.D($"performToolAction at {Game1.currentLocation?.Name} {this.TileLocation}",
-				ModEntry.Instance.Config.DebugMode);
+				ModEntry.Config.DebugMode);
 
 			// Ignore usages that wouldn't trigger actions for other machines
 			if (t is null || !t.isHeavyHitter() || t is StardewValley.Tools.MeleeWeapon)
@@ -396,7 +396,7 @@ namespace BlueberryMushroomMachine
 			if (!probe)
 			{
 				Log.D($"performObjectDropInAction(dropIn:{dropIn?.Name ?? "null"}) at {Game1.currentLocation?.Name} {this.TileLocation}",
-					ModEntry.Instance.Config.DebugMode);
+					ModEntry.Config.DebugMode);
 			}
 
 			// Ignore usages with inappropriate items
@@ -410,7 +410,7 @@ namespace BlueberryMushroomMachine
 			{
 				if (!probe)
 				{
-					Game1.showRedMessage(message: ModEntry.Instance.I18n.Get("error.truffle"));
+					Game1.showRedMessage(message: ModEntry.I18n.Get("error.truffle"));
 				}
 				return false;
 			}
@@ -421,7 +421,7 @@ namespace BlueberryMushroomMachine
 				if (!probe)
 				{
 					Log.D($"Invalid mushroom: [{dropIn.ParentSheetIndex}] {dropIn.Name}",
-						ModEntry.Instance.Config.DebugMode);
+						ModEntry.Config.DebugMode);
 				}
 				return false;
 			}
@@ -429,17 +429,17 @@ namespace BlueberryMushroomMachine
 			// Ignore if location is not appropriate
 			if (who is not null)
 			{
-				if (!((who.currentLocation is Cellar && ModEntry.Instance.Config.WorksInCellar)
-					|| (who.currentLocation is FarmCave && ModEntry.Instance.Config.WorksInFarmCave)
-					|| (who.currentLocation is BuildableGameLocation && ModEntry.Instance.Config.WorksInBuildings)
-					|| (who.currentLocation is FarmHouse && ModEntry.Instance.Config.WorksInFarmHouse)
-					|| (who.currentLocation.IsGreenhouse && ModEntry.Instance.Config.WorksInGreenhouse)
-					|| (who.currentLocation.IsOutdoors && ModEntry.Instance.Config.WorksOutdoors)))
+				if (!((who.currentLocation is Cellar && ModEntry.Config.WorksInCellar)
+					|| (who.currentLocation is FarmCave && ModEntry.Config.WorksInFarmCave)
+					|| (who.currentLocation is BuildableGameLocation && ModEntry.Config.WorksInBuildings)
+					|| (who.currentLocation is FarmHouse && ModEntry.Config.WorksInFarmHouse)
+					|| (who.currentLocation.IsGreenhouse && ModEntry.Config.WorksInGreenhouse)
+					|| (who.currentLocation.IsOutdoors && ModEntry.Config.WorksOutdoors)))
 				{
 					// Ignore bad machine locations
 					if (!probe)
 					{
-						Game1.showRedMessage(message: ModEntry.Instance.I18n.Get("error.location"));
+						Game1.showRedMessage(message: ModEntry.I18n.Get("error.location"));
 					}
 					return false;
 				}
@@ -459,7 +459,7 @@ namespace BlueberryMushroomMachine
 					// Get a copy of the root mushroom
 					this.PopExposedMushroom(forceRemoveSource: false);
 				}
-				else if (!ModEntry.Instance.Config.OnlyToolsCanRemoveRootMushrooms)
+				else if (!ModEntry.Config.OnlyToolsCanRemoveRootMushrooms)
 				{
 					// Remove the root mushroom if it hasn't settled overnight
 					this.PopExposedMushroom(forceRemoveSource: true);
@@ -515,7 +515,7 @@ namespace BlueberryMushroomMachine
 			Point shake = this.shakeTimer < 1
 				? Point.Zero
 				: new Point(x: Game1.random.Next(-1, 2), Game1.random.Next(-1, 2));
-			Vector2 pulseAmount = ModEntry.Instance.Config.PulseWhenGrowing
+			Vector2 pulseAmount = ModEntry.Config.PulseWhenGrowing
 				? this.getScale() * Game1.pixelZoom
 				: Vector2.One;
 			Vector2 position = Game1.GlobalToLocal(

@@ -17,7 +17,7 @@ namespace BlueberryMushroomMachine.Editors
 					const string key = "event.4637.0000.0000";
 					if (!data.ContainsKey(key))
 					{
-						data.Add(key, ModEntry.Instance.I18n.Get(key));
+						data.Add(key, ModEntry.I18n.Get(key));
 					}
 				});
 				return true;
@@ -44,11 +44,11 @@ namespace BlueberryMushroomMachine.Editors
 					if (Game1.player.HouseUpgradeLevel >= 3)
 					{
 						Log.D("Event conditions:" +
-							  $" disabled=[{ModEntry.Instance.Config.DisabledForFruitCave}]" +
+							  $" disabled=[{ModEntry.Config.DisabledForFruitCave}]" +
 							  $" caveChoice=[{Game1.MasterPlayer.caveChoice}]",
-							ModEntry.Instance.Config.DebugMode);
+							ModEntry.Config.DebugMode);
 
-						if (ModEntry.Instance.Config.DisabledForFruitCave && Game1.MasterPlayer.caveChoice.Value != Farmer.caveMushrooms)
+						if (ModEntry.Config.DisabledForFruitCave && Game1.MasterPlayer.caveChoice.Value != Farmer.caveMushrooms)
 						{
 							return;
 						}
@@ -57,13 +57,13 @@ namespace BlueberryMushroomMachine.Editors
 						{
 							string value = string.Format(
 								json[key],
-								ModEntry.Instance.I18n.Get("event.4637.0001.0000"),
-								ModEntry.Instance.I18n.Get("event.4637.0001.0001"),
-								ModEntry.Instance.I18n.Get("event.4637.0001.0002"),
-								ModEntry.Instance.I18n.Get("event.4637.0001.0003"),
+								ModEntry.I18n.Get("event.4637.0001.0000"),
+								ModEntry.I18n.Get("event.4637.0001.0001"),
+								ModEntry.I18n.Get("event.4637.0001.0002"),
+								ModEntry.I18n.Get("event.4637.0001.0003"),
 								ModValues.PropagatorInternalName);
 							Log.D($"Injecting event.",
-								ModEntry.Instance.Config.DebugMode);
+								ModEntry.Config.DebugMode);
 							data.Add(key, value);
 						}
 					}
