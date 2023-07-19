@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace BlueberryMushroomMachine.Core
+namespace BlueberryMushroomMachine
 {
 	public interface ISpaceCoreAPI
 	{

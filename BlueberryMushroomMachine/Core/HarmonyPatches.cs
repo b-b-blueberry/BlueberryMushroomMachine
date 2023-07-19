@@ -10,74 +10,92 @@ namespace BlueberryMushroomMachine
 	{
 		public static void Apply(string uniqueID)
 		{
-			var harmony = new Harmony(uniqueID);
+			Harmony harmony = new(id: uniqueID);
 
 			harmony.Patch(
-				original: AccessTools.Method(typeof(CraftingRecipe), "createItem"),
-				postfix: new HarmonyMethod(typeof(HarmonyPatches), nameof(CraftingRecipe_CreateItem_Postfix)));
+				original: AccessTools.Method(type: typeof(CraftingRecipe), name: "createItem"),
+				postfix: new HarmonyMethod(methodType: typeof(HarmonyPatches), methodName: nameof(HarmonyPatches.CraftingRecipe_CreateItem_Postfix)));
 			harmony.Patch(
-				original: AccessTools.Method(typeof(CraftingPage), "performHoverAction"),
-				postfix: new HarmonyMethod(typeof(HarmonyPatches), nameof(CraftingPage_HoverAction_Postfix)));
+				original: AccessTools.Method(type: typeof(CraftingPage), name: "performHoverAction"),
+				postfix: new HarmonyMethod(methodType: typeof(HarmonyPatches), methodName: nameof(HarmonyPatches.CraftingPage_HoverAction_Postfix)));
 			harmony.Patch(
-				original: AccessTools.Method(typeof(CraftingPage), "clickCraftingRecipe"),
-				prefix: new HarmonyMethod(typeof(HarmonyPatches), nameof(CraftingPage_ClickCraftingRecipe_Prefix)));
+				original: AccessTools.Method(type: typeof(CraftingPage), name: "clickCraftingRecipe"),
+				prefix: new HarmonyMethod(methodType: typeof(HarmonyPatches), methodName: nameof(HarmonyPatches.CraftingPage_ClickCraftingRecipe_Prefix)));
 		}
 
 		internal static void CraftingRecipe_CreateItem_Postfix(CraftingRecipe __instance, ref Item __result)
 		{
+			if (__instance.name != ModValues.PropagatorInternalName)
+			{
+				return;
+			}
+
 			// Intercept machine crafts with a Propagator subclass,
 			// rather than a generic nonfunctional craftable
-			if (__instance.name == ModValues.PropagatorInternalName)
-				__result = new Propagator(Game1.player.getTileLocation());
+			__result = new Propagator(tileLocation: Game1.player.getTileLocation());
 		}
 
 		internal static void CraftingPage_HoverAction_Postfix(CraftingRecipe ___hoverRecipe)
 		{
-			// Add display name in crafting pages
-			if (___hoverRecipe == null)
+			if (___hoverRecipe?.name != ModValues.PropagatorInternalName)
+			{
 				return;
-			if (___hoverRecipe.name.Equals(ModValues.PropagatorInternalName))
-				___hoverRecipe.DisplayName = new Propagator().DisplayName;
+			}
+
+			// Add display name in crafting pages
+			___hoverRecipe.DisplayName = Propagator.PropagatorDisplayName;
 		}
 
 		internal static bool CraftingPage_ClickCraftingRecipe_Prefix(
-			List<Dictionary<ClickableTextureComponent, CraftingRecipe>> ___pagesOfCraftingRecipes, int ___currentCraftingPage, ref Item ___heldItem,
-			ClickableTextureComponent c, bool playSound = true)
+			CraftingPage __instance,
+			List<Dictionary<ClickableTextureComponent, CraftingRecipe>> ___pagesOfCraftingRecipes,
+			int ___currentCraftingPage,
+			ref Item ___heldItem,
+			ClickableTextureComponent c,
+			bool playSound = true)
 		{
 			try
 			{
-                var recipe = ___pagesOfCraftingRecipes[___currentCraftingPage][c];
+				CraftingRecipe recipe = ___pagesOfCraftingRecipes[___currentCraftingPage][c];
 
-                // Fetch an instance of any clicked-on craftable in the crafting menu
-                var tempItem = recipe.createItem();
+				// Fetch an instance of any clicked-on craftable in the crafting menu
+				Item tempItem = recipe.createItem();
 
 				// Fall through the prefix for any craftables other than the Propagator
-				if (!tempItem.Name.Equals(ModValues.PropagatorInternalName))
+				if (tempItem.Name != ModValues.PropagatorInternalName)
+				{
 					return true;
+				}
 
 				// Behaviours as from base method
-				if (___heldItem == null)
+				if (___heldItem is null)
 				{
-					recipe.consumeIngredients(null);
+					recipe.consumeIngredients(additional_materials: __instance._materialContainers);
 					___heldItem = tempItem;
 					if (playSound)
+					{
 						Game1.playSound("coin");
+					}
 				}
-				if (Game1.player.craftingRecipes.TryGetValue( recipe.name, out int prevCount))
-					Game1.player.craftingRecipes[recipe.name] = prevCount + recipe.numberProducedPerCraft;
-				if (___heldItem == null || !Game1.player.couldInventoryAcceptThisItem(___heldItem))
+				if (Game1.player.craftingRecipes.TryGetValue(recipe.name, out int numberCrafted))
+				{
+					Game1.player.craftingRecipes[recipe.name] = numberCrafted + recipe.numberProducedPerCraft;
+				}
+				if (___heldItem is null || !Game1.player.couldInventoryAcceptThisItem(___heldItem))
+				{
 					return false;
+				}
 
 				// Add the machine to the user's inventory
-				var prop = new Propagator(Game1.player.getTileLocation());
-				Game1.player.addItemToInventoryBool(prop);
+				Propagator propagator = new(tileLocation: Game1.player.getTileLocation());
+				Game1.player.addItemToInventoryBool(item: propagator);
 				___heldItem = null;
 				return false;
 			}
 			catch (Exception e)
 			{
 				Log.E($"{ModValues.AuthorName}.{ModValues.PackageName} failed in {nameof(CraftingPage_ClickCraftingRecipe_Prefix)}"
-					    + $"\n{e}");
+						+ $"\n{e}");
 				return true;
 			}
 		}

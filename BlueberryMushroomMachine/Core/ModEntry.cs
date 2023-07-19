@@ -1,4 +1,3 @@
-﻿using BlueberryMushroomMachine.Core;
 using BlueberryMushroomMachine.Editors;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -26,152 +25,172 @@ namespace BlueberryMushroomMachine
 
 		internal static ModEntry Instance;
 		internal Config Config;
-		internal ITranslationHelper i18n => Helper.Translation;
+		internal ITranslationHelper I18n => this.Helper.Translation;
 
-		public static Texture2D OverlayTexture;
+		public static Texture2D OverlayTexture { get => ModEntry._overlayTexture; }
 
-        private static IJsonAssetsAPI? jsonAssetsAPI;
+		private static Texture2D _overlayTexture;
+		private static IJsonAssetsAPI _jsonAssetsAPI;
 
 		public override void Entry(IModHelper helper)
 		{
 			Instance = this;
-			Config = helper.ReadConfig<Config>();
+			this.Config = helper.ReadConfig<Config>();
 
-			if (Config.DebugMode)
-				helper.Events.Input.ButtonPressed += OnButtonPressed;
+			if (this.Config.DebugMode)
+				helper.Events.Input.ButtonPressed += this.OnButtonPressed;
 
-			Helper.Events.GameLoop.GameLaunched += OnGameLaunched;
-			Helper.Events.GameLoop.DayStarted += OnDayStarted;
+			this.Helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
+			this.Helper.Events.GameLoop.DayStarted += this.OnDayStarted;
 
 			// Load mushroom overlay texture for all filled machines
-			OverlayTexture = Helper.ModContent.Load<Texture2D>(ModValues.OverlayPath);
+			ModEntry._overlayTexture = this.Helper.ModContent.Load<Texture2D>(ModValues.OverlayPath);
 
 			// Harmony setup
-			HarmonyPatches.Apply(this.ModManifest.UniqueID);
+			HarmonyPatches.Apply(uniqueID: this.ModManifest.UniqueID);
 
-            // Load textures
-            BigCraftablesTilesheetEditor.Initialize(helper.ModContent);
+			// Load textures
+			BigCraftablesTilesheetEditor.Initialize(helper: helper.ModContent);
 		}
 
 		private void LoadApis()
 		{
 			// SpaceCore setup
-			var spacecoreApi = Helper.ModRegistry.GetApi<Core.ISpaceCoreAPI>("spacechase0.SpaceCore");
+			ISpaceCoreAPI spacecoreApi = this.Helper.ModRegistry.GetApi<ISpaceCoreAPI>("spacechase0.SpaceCore");
 			spacecoreApi.RegisterSerializerType(typeof(Propagator));
 
-            jsonAssetsAPI =  Helper.ModRegistry.GetApi<IJsonAssetsAPI>("spacechase0.JsonAssets");
-            if (jsonAssetsAPI is null)
-                this.Monitor.Log($"Json Assets not found, deshuffling will not happen");
-            else
-                jsonAssetsAPI.IdsFixed += this.FixIds;
+			ModEntry._jsonAssetsAPI = this.Helper.ModRegistry.GetApi<IJsonAssetsAPI>("spacechase0.JsonAssets");
+			if (ModEntry._jsonAssetsAPI is null)
+			{
+				Log.D($"Json Assets not found, deshuffling will not happen",
+					this.Config.DebugMode);
+			}
+			else
+			{
+				ModEntry._jsonAssetsAPI.IdsFixed += (object? sender, EventArgs e) => this.FixIds();
+			}
 		}
 
-        private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
-        {
-            try
-            {
-                if (Config.DebugMode)
-                {
-                    Log.D("== CONFIG SUMMARY ==\n"
-                          + "\nWorks in locations:"
-                          + $"\n    {Config.WorksInCellar} {Config.WorksInFarmCave} {Config.WorksInBuildings}"
-                          + $"\n    {Config.WorksInFarmHouse} {Config.WorksInGreenhouse} {Config.WorksOutdoors}\n"
-                          + $"\nMushroom Cave:  {Config.DisabledForFruitCave}"
-                          + $"\nRecipe Cheat:   {Config.RecipeAlwaysAvailable}"
-                          + $"\nQuantity Cheat: {Config.MaximumQuantityLimitsDoubled}"
-                          + $"\nDays To Mature: {Config.MaximumDaysToMature}"
-                          + $"\nGrowth Pulse:   {Config.PulseWhenGrowing}"
-                          + $"\nOnly Tools Pop: {Config.OnlyToolsCanRemoveRootMushrooms}"
-                          + $"\nCustom Objects: {Config.OtherObjectsThatCanBeGrown.Aggregate("", (s, s1) => $"{s}\n    {s1}")}\n"
-                          + $"\nLanguage:       {LocalizedContentManager.CurrentLanguageCode.ToString().ToUpper()}"
-                          + $"\nDebugging:      {Config.DebugMode}",
-                        Config.DebugMode);
-                }
-            }
-            catch (Exception e1)
-            {
-                Log.E($"Error in printing mod configuration.\n{e1}");
-            }
+		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
+		{
+			try
+			{
+				if (this.Config.DebugMode)
+				{
+					Log.D("== CONFIG SUMMARY ==\n"
+						  + "\nWorks in locations:"
+						  + $"\n    {this.Config.WorksInCellar} {this.Config.WorksInFarmCave} {this.Config.WorksInBuildings}"
+						  + $"\n    {this.Config.WorksInFarmHouse} {this.Config.WorksInGreenhouse} {this.Config.WorksOutdoors}\n"
+						  + $"\nMushroom Cave:  {this.Config.DisabledForFruitCave}"
+						  + $"\nRecipe Cheat:   {this.Config.RecipeAlwaysAvailable}"
+						  + $"\nQuantity Cheat: {this.Config.MaximumQuantityLimitsDoubled}"
+						  + $"\nDays To Mature: {this.Config.MaximumDaysToMature}"
+						  + $"\nGrowth Pulse:   {this.Config.PulseWhenGrowing}"
+						  + $"\nOnly Tools Pop: {this.Config.OnlyToolsCanRemoveRootMushrooms}"
+						  + $"\nCustom Objects: {this.Config.OtherObjectsThatCanBeGrown.Aggregate("", (s, s1) => $"{s}\n    {s1}")}\n"
+						  + $"\nLanguage:       {LocalizedContentManager.CurrentLanguageCode.ToString().ToUpper()}"
+						  + $"\nDebugging:      {this.Config.DebugMode}",
+						this.Config.DebugMode);
+				}
+			}
+			catch (Exception ex)
+			{
+				Log.E($"Error in printing mod configuration.\n{ex}");
+			}
 
-            LoadApis();
+			this.LoadApis();
 
-            this.Helper.Events.Content.AssetRequested += this.OnAssetRequested;
-        }
+			this.Helper.Events.Content.AssetRequested += this.OnAssetRequested;
+		}
 
-        private void FixIds(object? sender, EventArgs e)
-        {
-            try
-            {
-                Utility.ForAllLocations((location) =>
-                {
-                    foreach (var obj in location.Objects.Values)
-                    {
-                        if (obj is Propagator propagator && propagator.Name == ModValues.PropagatorInternalName)
-                        {
-                            var newId = jsonAssetsAPI.GetObjectId(propagator.SourceMushroomName);
-                            if (newId != -1 && newId != propagator.SourceMushroomIndex)
-                            {
-                                this.Monitor.Log($"Updating mushroom ID for mushroom propagator located at {location.NameOrUniqueName}::{propagator.TileLocation}: {propagator.SourceMushroomName} {propagator.SourceMushroomIndex} => {newId}");
-                                propagator.SourceMushroomIndex = newId;
-                            }
-                        }
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                Log.E($"Error while deshuffling held mushrooms\n\n{ex}");
-            }
-        }
+		private void FixIds()
+		{
+			try
+			{
+				Utility.ForAllLocations((GameLocation location) =>
+				{
+					foreach (Propagator propagator in location.Objects.Values.Where((Object o) => o is Propagator).Cast<Propagator>())
+					{
+						int id = _jsonAssetsAPI.GetObjectId(name: propagator.SourceMushroomName);
+						if (id != -1 && id != propagator.SourceMushroomIndex)
+						{
+							Log.D($"Updating mushroom ID for mushroom propagator located at" +
+								$" {location.NameOrUniqueName}::{propagator.TileLocation}:" +
+								$" {propagator.SourceMushroomName} {propagator.SourceMushroomIndex} => {id}",
+								ModEntry.Config.DebugMode);
+							propagator.SourceMushroomIndex = id;
+						}
+					}
+				});
+			}
+			catch (Exception e)
+			{
+				Log.E($"Error while deshuffling held mushrooms\n\n{e}");
+			}
+		}
 
 		private void OnDayStarted(object sender, DayStartedEventArgs e)
 		{
 			// Add Robin's pre-Demetrius-event dialogue
 			if (Game1.player.daysUntilHouseUpgrade.Value == 2 && Game1.player.HouseUpgradeLevel == 2)
+			{
 				Game1.player.activeDialogueEvents.Add("event.4637.0000.0000", 7);
+			}
 
-			// Add the Propagator crafting recipe if the cheat is enabled
-			if (Config.RecipeAlwaysAvailable)
-				if (!Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorInternalName))
-					Game1.player.craftingRecipes.Add(ModValues.PropagatorInternalName, 0);
+			// Update player recipes
+			if (this.Config.RecipeAlwaysAvailable
+				&& !Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorInternalName))
+			{
+				// Add the Propagator crafting recipe if the cheat is enabled
+				Game1.player.craftingRecipes.Add(ModValues.PropagatorInternalName, 0);
+			}
+			else if (!this.Config.RecipeAlwaysAvailable
+				&& !Game1.player.eventsSeen.Contains(ModValues.EventId)
+				&& Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorInternalName))
+			{
+				// Remove the Propagator crafting recipe if cheat is disabled and player has not seen the requisite event
+				Game1.player.craftingRecipes.Remove(ModValues.PropagatorInternalName);
+			}
 
-            // Manually DayUpdate each Propagator
-            Utility.ForAllLocations((location) =>
-            {
-                foreach (var obj in location.Objects.Values)
-                {
-                    if (obj is Propagator propagator && propagator.Name == ModValues.PropagatorInternalName)
-                        propagator.DayUpdate();
-                }
-            });
-        }
+			// Manually DayUpdate each Propagator
+			Utility.ForAllLocations((GameLocation location) =>
+			{
+				foreach (Propagator propagator in location.Objects.Values.Where((Object o) => o is Propagator).Cast<Propagator>())
+				{
+					propagator.DayUpdate();
+				}
+			});
+		}
 
 		private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
 		{
 			if (Game1.eventUp && !Game1.currentLocation.currentEvent.playerControlSequence
-			    || Game1.currentBillboard != 0 || Game1.activeClickableMenu != null || Game1.menuUp
-			    || Game1.nameSelectUp
-			    || Game1.IsChatting || Game1.dialogueTyping || Game1.dialogueUp || Game1.fadeToBlack
-			    || !Game1.player.CanMove || Game1.eventUp || Game1.isFestival())
+				|| Game1.currentBillboard != 0 || Game1.activeClickableMenu is not null || Game1.menuUp
+				|| Game1.nameSelectUp
+				|| Game1.IsChatting || Game1.dialogueTyping || Game1.dialogueUp || Game1.fadeToBlack
+				|| !Game1.player.CanMove || Game1.eventUp || Game1.isFestival())
 				return;
 
 			// Debug spawning for Propagator: Can't be spawned in with CJB Item Spawner as it subclasses Object
-			if (e.Button == Config.DebugGivePropagatorKey)
+			if (e.Button == this.Config.DebugGivePropagatorKey)
 			{
-				var prop = new Propagator(Game1.player.getTileLocation());
-				Game1.player.addItemByMenuIfNecessary(prop);
+				Propagator propagator = new(tileLocation: Game1.player.getTileLocation())
+				{
+					Stack = args.Length > 0 && int.TryParse(args[0], out int stack) ? stack : 1
+				};
+				Game1.player.addItemByMenuIfNecessary(item: propagator);
 				Log.D($"{Game1.player.Name} spawned in a"
-				      + $" [{ModValues.PropagatorIndex}] {ModValues.PropagatorInternalName} ({prop.DisplayName}).");
+					  + $" [{ModValues.PropagatorIndex}] {ModValues.PropagatorInternalName} ({propagator.DisplayName}).");
 			}
 		}
 
-        private void OnAssetRequested(object sender, AssetRequestedEventArgs e)
-        {
-            _ = BigCraftablesInfoEditor.ApplyEdit(e)
-                || BigCraftablesTilesheetEditor.ApplyEdit(e)
-                || CraftingRecipesEditor.ApplyEdit(e)
-                || EventsEditor.ApplyEdit(e); 
-        }
+		private void OnAssetRequested(object sender, AssetRequestedEventArgs e)
+		{
+			_ = BigCraftablesInfoEditor.ApplyEdit(e)
+				|| BigCraftablesTilesheetEditor.ApplyEdit(e)
+				|| CraftingRecipesEditor.ApplyEdit(e)
+				|| EventsEditor.ApplyEdit(e);
+		}
 
 		/// <summary>
 		/// Determines the frame to be used for showing held mushroom growth.
@@ -183,11 +202,9 @@ namespace BlueberryMushroomMachine
 		/// <returns>Frame for mushroom growth progress.</returns>
 		public static int GetOverlayGrowthFrame(float currentDays, int goalDays, int quantity, int max)
 		{
-			var maths =
-				(((quantity - 1) + ((float)currentDays / goalDays)) * goalDays)
-				/ ((max - 1) * goalDays)
+			float maths = (quantity - 1 + ((float)currentDays / goalDays)) * goalDays / ((max - 1) * goalDays)
 				* ModValues.OverlayMushroomFrames;
-            return Math.Clamp((int)maths, 0, ModValues.OverlayMushroomFrames);
+			return Math.Clamp(value: (int)maths, min: 0, max: ModValues.OverlayMushroomFrames);
 		}
 
 		/// <summary>
@@ -198,34 +215,45 @@ namespace BlueberryMushroomMachine
 		/// <returns></returns>
 		public static Rectangle GetOverlaySourceRect(int index, int whichFrame)
 		{
-			return Enum.IsDefined(typeof(Mushrooms), index)
-				? new Rectangle(whichFrame * 16,  GetMushroomSourceRectIndex(index) * 32, 16, 32)
-				: Game1.getSourceRectForStandardTileSheet(Game1.objectSpriteSheet, index, 16, 16);
+			return Enum.IsDefined(enumType: typeof(Mushrooms), value: index)
+				? new Rectangle(
+					x: whichFrame * 16,
+					y: GetMushroomSourceRectIndex(index: index) * 32,
+					width: 16,
+					height: 32)
+				: Game1.getSourceRectForStandardTileSheet(
+					tileSheet: Game1.objectSpriteSheet,
+					tilePosition: index,
+					width: Game1.smallestTileSize,
+					height: Game1.smallestTileSize);
 		}
 
-        public static bool IsValidMushroom(Object o)
-        {
-            // from the vanilla Utility.IsPerfectlyNormalObjectAtParentSheetIndex or whatever that method was again.
-            // Don't want to start growing wallpaper
-            Type type = o.GetType();
-            if (o is null || (type != typeof(Object) && type != typeof(ColoredObject)))
-                return false;
+		public static bool IsValidMushroom(Object o)
+		{
+			// From the vanilla Utility.IsPerfectlyNormalObjectAtParentSheetIndex or whatever that method was again
+			// Don't want to start growing wallpaper
+			Type type = o.GetType();
+			if (o is null || (type != typeof(Object) && type != typeof(ColoredObject)))
+			{
+				return false;
+			}
 
-            return Enum.IsDefined(typeof(Mushrooms), o.ParentSheetIndex)
-                   || (o.Category == -75 || o.Category == -81)
-                   && (o.Name.Contains("mushroom", StringComparison.InvariantCultureIgnoreCase) || o.Name.Contains("fungus", StringComparison.InvariantCultureIgnoreCase))
-                   || Instance.Config.OtherObjectsThatCanBeGrown.Contains(o.Name);
-        }
+			return Enum.IsDefined(enumType: typeof(Mushrooms), value: o.ParentSheetIndex)
+				|| Instance.Config.OtherObjectsThatCanBeGrown.Contains(o.Name)
+				|| ((o.Category == Object.VegetableCategory || o.Category == Object.GreensCategory)
+					&& (o.Name.Contains("mushroom", StringComparison.InvariantCultureIgnoreCase)
+						|| o.Name.Contains("fungus", StringComparison.InvariantCultureIgnoreCase)));
+		}
 
 		public static int GetMushroomSourceRectIndex(int index)
 		{
 			return index switch
 			{
-				(int) Mushrooms.Morel => 0,
-				(int) Mushrooms.Chantarelle => 1,
-				(int) Mushrooms.Common => 2,
-				(int) Mushrooms.Red => 3,
-				(int) Mushrooms.Purple => 4,
+				(int)Mushrooms.Morel => 0,
+				(int)Mushrooms.Chantarelle => 1,
+				(int)Mushrooms.Common => 2,
+				(int)Mushrooms.Red => 3,
+				(int)Mushrooms.Purple => 4,
 				_ => -1
 			};
 		}
@@ -234,11 +262,11 @@ namespace BlueberryMushroomMachine
 		{
 			rate = o.ParentSheetIndex switch
 			{
-				(int) Mushrooms.Morel => 0.5f,
-				(int) Mushrooms.Chantarelle => 0.5f,
-				(int) Mushrooms.Common => 1.0f,
-				(int) Mushrooms.Red => 0.5f,
-				(int) Mushrooms.Purple => 0.25f,
+				(int)Mushrooms.Morel => 0.5f,
+				(int)Mushrooms.Chantarelle => 0.5f,
+				(int)Mushrooms.Common => 1.0f,
+				(int)Mushrooms.Red => 0.5f,
+				(int)Mushrooms.Purple => 0.25f,
 				_ => o.Price < 50 ? 1.0f : o.Price < 100 ? 0.75f : o.Price < 200 ? 0.5f : 0.25f
 			};
 		}
@@ -247,11 +275,11 @@ namespace BlueberryMushroomMachine
 		{
 			quantity = o.ParentSheetIndex switch
 			{
-				(int) Mushrooms.Morel => 4,
-				(int) Mushrooms.Chantarelle => 4,
-				(int) Mushrooms.Common => 6,
-				(int) Mushrooms.Red => 3,
-				(int) Mushrooms.Purple => 2,
+				(int)Mushrooms.Morel => 4,
+				(int)Mushrooms.Chantarelle => 4,
+				(int)Mushrooms.Common => 6,
+				(int)Mushrooms.Red => 3,
+				(int)Mushrooms.Purple => 2,
 				_ => o.Price < 50 ? 5 : o.Price < 100 ? 4 : o.Price < 200 ? 3 : 2
 			};
 			quantity *= Instance.Config.MaximumQuantityLimitsDoubled ? 2 : 1;

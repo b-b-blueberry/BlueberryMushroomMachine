@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace BlueberryMushroomMachine.Core;
+namespace BlueberryMushroomMachine;
 public interface IJsonAssetsAPI
 {
-    int GetObjectId(string name);
+	int GetObjectId(string name);
 
-    event EventHandler IdsFixed;
+	event EventHandler IdsFixed;
 }

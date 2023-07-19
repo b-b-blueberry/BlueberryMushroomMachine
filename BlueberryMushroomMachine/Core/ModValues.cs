@@ -26,5 +26,8 @@ namespace BlueberryMushroomMachine
 		public static string CraftingRecipeData = "388 20 709 1/Home/{0}/true/null";
 
 		public const int OverlayMushroomFrames = 3;
+
+		// Events
+		public const int EventId = 46370001;
 	}
 }

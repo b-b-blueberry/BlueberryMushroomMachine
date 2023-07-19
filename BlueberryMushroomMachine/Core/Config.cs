@@ -11,7 +11,7 @@ namespace BlueberryMushroomMachine
 		public bool MaximumQuantityLimitsDoubled { get; set; } = false;
 		public bool OnlyToolsCanRemoveRootMushrooms = false;
 		public bool PulseWhenGrowing = true;
-		public List<string> OtherObjectsThatCanBeGrown = new List<string>
+		public List<string> OtherObjectsThatCanBeGrown = new()
 		{
 			"Example Mushroom Name",
 			"Example Item Not Called Fungus",
