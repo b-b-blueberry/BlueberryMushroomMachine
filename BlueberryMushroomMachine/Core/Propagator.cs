@@ -254,7 +254,7 @@ namespace BlueberryMushroomMachine
 		/// <summary>
 		/// Perform all start-of-day checks for the Propagator to handle held object events.
 		/// </summary>
-		internal void DayUpdate()
+		internal void DayUpdate(GameLocation location)
 		{
 			Log.D($"DayUpdate (item:" +
 				$" [{this.SourceMushroomIndex}]" +

@@ -249,7 +249,7 @@ namespace BlueberryMushroomMachine
 			{
 				foreach (Propagator propagator in location.Objects.Values.Where((Object o) => o is Propagator).Cast<Propagator>())
 				{
-					propagator.DayUpdate();
+					propagator.DayUpdate(location: location);
 				}
 			});
 		}
