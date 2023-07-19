@@ -37,8 +37,7 @@ namespace BlueberryMushroomMachine
 			ModEntry.Instance = this;
 			ModEntry.Config = helper.ReadConfig<Config>();
 
-			if (ModEntry.Config.DebugMode)
-				helper.Events.Input.ButtonPressed += this.OnButtonPressed;
+			this.RegisterConsoleCommands();
 
 			this.Helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
 			this.Helper.Events.GameLoop.DayStarted += this.OnDayStarted;
@@ -163,26 +162,22 @@ namespace BlueberryMushroomMachine
 			});
 		}
 
-		private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
+		private void RegisterConsoleCommands()
 		{
-			if (Game1.eventUp && !Game1.currentLocation.currentEvent.playerControlSequence
-				|| Game1.currentBillboard != 0 || Game1.activeClickableMenu is not null || Game1.menuUp
-				|| Game1.nameSelectUp
-				|| Game1.IsChatting || Game1.dialogueTyping || Game1.dialogueUp || Game1.fadeToBlack
-				|| !Game1.player.CanMove || Game1.eventUp || Game1.isFestival())
-				return;
-
-			// Debug spawning for Propagator: Can't be spawned in with CJB Item Spawner as it subclasses Object
-			if (e.Button == this.Config.DebugGivePropagatorKey)
-			{
-				Propagator propagator = new(tileLocation: Game1.player.getTileLocation())
+			this.Helper.ConsoleCommands.Add(
+				name: ModValues.SpawnConsoleCommand,
+				documentation: "Add one (or a given number of) mushroom propagator(s) to your inventory.",
+				callback: (string cmd, string[] args) =>
 				{
-					Stack = args.Length > 0 && int.TryParse(args[0], out int stack) ? stack : 1
-				};
-				Game1.player.addItemByMenuIfNecessary(item: propagator);
-				Log.D($"{Game1.player.Name} spawned in a"
-					  + $" [{ModValues.PropagatorIndex}] {ModValues.PropagatorInternalName} ({propagator.DisplayName}).");
-			}
+					// Debug spawning for Propagator: Can't be spawned in with CJB Item Spawner as it subclasses Object
+					Propagator propagator = new(tileLocation: Game1.player.getTileLocation())
+					{
+						Stack = args.Length > 0 && int.TryParse(args[0], out int stack) ? stack : 1
+					};
+					Game1.player.addItemByMenuIfNecessary(item: propagator);
+					Log.D($"{Game1.player.Name} spawned in a"
+						  + $" [{ModValues.PropagatorIndex}] {ModValues.PropagatorInternalName} ({propagator.DisplayName}).");
+				});
 		}
 
 		private void OnAssetRequested(object sender, AssetRequestedEventArgs e)

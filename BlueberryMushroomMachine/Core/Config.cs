@@ -25,6 +25,5 @@ namespace BlueberryMushroomMachine
 		public bool WorksOutdoors { get; set; } = false;
 
 		public bool DebugMode { get; set; } = false;
-		public SButton DebugGivePropagatorKey { get; set; } = SButton.OemComma;
 	}
 }
