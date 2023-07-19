@@ -27,14 +27,13 @@ namespace BlueberryMushroomMachine
 			= "bb.bmm.fix_ids";
 
 		// Objects
+		public const int OverlayMushroomFrames = 3;
 		public const string ObjectDataFormat = "{0}/0/-300/Crafting -9/{1}/true/true/0";
 		public const string RecipeDataFormat = "388 20 709 1/Home/{0}/true/null";
 
-		public static int PropagatorIndex = 0;
-		public static string ObjectData = null;
-		public static string RecipeData = null;
-
-		public const int OverlayMushroomFrames = 3;
+		public static int PropagatorIndex { get; set; } = 0;
+		public static string ObjectData { get; set; } = null;
+		public static string RecipeData { get; set; } = null;
 
 		// Events
 		public const int EventId = 46370001;
