@@ -264,9 +264,6 @@ namespace BlueberryMushroomMachine
 				$" at {location.Name} {this.TileLocation}",
 				ModEntry.Config.DebugMode);
 
-			// Indexing inconsistencies with JA/CFR
-			this.ParentSheetIndex = ModValues.PropagatorIndex;
-
 			// Grow mushrooms overnight
 			if (this.SourceMushroomIndex > 0)
 			{
