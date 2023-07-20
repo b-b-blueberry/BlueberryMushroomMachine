@@ -243,15 +243,6 @@ namespace BlueberryMushroomMachine
 				// Remove the Propagator crafting recipe if cheat is disabled and player has not seen the requisite event
 				Game1.player.craftingRecipes.Remove(ModValues.PropagatorInternalName);
 			}
-
-			// Manually DayUpdate each Propagator
-			Utility.ForAllLocations((GameLocation location) =>
-			{
-				foreach (Propagator propagator in location.Objects.Values.Where((Object o) => o is Propagator).Cast<Propagator>())
-				{
-					propagator.DayUpdate(location: location);
-				}
-			});
 		}
 
 		private void RegisterConsoleCommands()
