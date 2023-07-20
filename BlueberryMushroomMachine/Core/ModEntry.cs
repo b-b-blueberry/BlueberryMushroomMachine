@@ -28,6 +28,7 @@ namespace BlueberryMushroomMachine
 		public static ModEntry Instance { get; private set; }
 		public static Config Config { get; private set; }
 		public static ITranslationHelper I18n => ModEntry.Instance.Helper.Translation;
+		public static Texture2D MachineTexture { get; private set; }
 		public static Texture2D OverlayTexture { get; private set; }
 
 		private static IJsonAssetsAPI _jsonAssetsAPI;
@@ -44,13 +45,11 @@ namespace BlueberryMushroomMachine
 			this.Helper.Events.GameLoop.ReturnedToTitle += this.OnTitleScreen;
 
 			// Load mushroom overlay texture for all filled machines
+			ModEntry.MachineTexture = this.Helper.ModContent.Load<Texture2D>(ModValues.MachinePath);
 			ModEntry.OverlayTexture = this.Helper.ModContent.Load<Texture2D>(ModValues.OverlayPath);
 
 			// Harmony setup
 			HarmonyPatches.Apply(uniqueID: this.ModManifest.UniqueID);
-
-			// Load textures
-			BigCraftablesTilesheetEditor.Initialize(helper: helper.ModContent);
 		}
 
 		private void LoadApis()
@@ -278,7 +277,6 @@ namespace BlueberryMushroomMachine
 		private void OnAssetRequested(object sender, AssetRequestedEventArgs e)
 		{
 			_ = BigCraftablesInfoEditor.ApplyEdit(e)
-				|| BigCraftablesTilesheetEditor.ApplyEdit(e)
 				|| CraftingRecipesEditor.ApplyEdit(e)
 				|| EventsEditor.ApplyEdit(e);
 		}

@@ -24,6 +24,7 @@ namespace BlueberryMushroomMachine
 
 		// Common definitions
 		public static string PropagatorDisplayName => ModEntry.I18n.Get("machine.name");
+		public static Rectangle PropagatorSource = new(x: 0, y: 0, width: 16, height: 32);
 		public const int PropagatorWorkingMinutes = 999999;
 
 		public Propagator() : this(tileLocation: Vector2.Zero)
@@ -274,7 +275,7 @@ namespace BlueberryMushroomMachine
 		/// <summary>
 		/// Updates object quantity as the per-day maturity timer counts up to its threshold for this type of mushroom.
 		/// </summary>
-		internal void GrowHeldMushroom()
+		public void GrowHeldMushroom()
 		{
 			if (this.heldObject.Value is null)
 			{
@@ -526,9 +527,9 @@ namespace BlueberryMushroomMachine
 
 			// Draw the base sprite
 			b.Draw(
-					texture: Game1.bigCraftableSpriteSheet,
+					texture: ModEntry.MachineTexture,
 					destinationRectangle: destRect,
-					sourceRectangle: sourceRect,
+					sourceRectangle: Propagator.PropagatorSource,
 					color: Color.White * alpha,
 					rotation: 0f,
 					origin: Vector2.Zero,
@@ -549,31 +550,157 @@ namespace BlueberryMushroomMachine
 				goalDays: this.DefaultDaysToMature,
 				quantity: this.heldObject.Value?.Stack ?? 0,
 				max: this.MaximumStack);
-			sourceRect = ModEntry.GetOverlaySourceRect(index: this.SourceMushroomIndex, whichFrame: whichFrame);
 
 			if (isCustomMushroom)
 			{
 				float growthRatio = (whichFrame + 1f) / (ModValues.OverlayMushroomFrames + 1f);
 				float growthScale = Math.Min(0.8f, growthRatio) + 0.2f;
 				destRect = new Rectangle(
-					x: (int)(position.X - pulseAmount.X / 2f) + shake.X + (int)(32 * (1 - growthScale))
-						+ (int)(pulseAmount.X * growthScale / 4),
-					y: (int)(position.Y - pulseAmount.Y / 2f) + shake.Y + 48 + (int)(32 * (1 - growthScale))
-						+ (int)(pulseAmount.Y * growthScale / 8),
-					width: (int)((Game1.tileSize + pulseAmount.X) * growthScale),
-					height: (int)((Game1.tileSize + pulseAmount.Y / 2f) * growthScale));
+					x: (int)(position.X - pulse.X / 2f) + shake.X + (int)(32 * (1 - growthScale))
+						+ (int)(pulse.X * growthScale / 4),
+					y: (int)(position.Y - pulse.Y / 2f) + shake.Y + 48 + (int)(32 * (1 - growthScale))
+						+ (int)(pulse.Y * growthScale / 8),
+					width: (int)((Game1.tileSize + pulse.X) * growthScale),
+					height: (int)((Game1.tileSize + pulse.Y / 2f) * growthScale));
 			}
 
 			b.Draw(
 				texture: !isCustomMushroom ? ModEntry.OverlayTexture : Game1.objectSpriteSheet,
 				destinationRectangle: destRect,
-				sourceRectangle: sourceRect,
+				sourceRectangle: ModEntry.GetOverlaySourceRect(index: this.SourceMushroomIndex, whichFrame: whichFrame),
 				color: Color.White,
 				rotation: 0f,
 				origin: Vector2.Zero,
 				effects: SpriteEffects.None,
 				layerDepth: Math.Max(0.0f, ((y + 1) * Game1.tileSize - 24) / 10000f)
 					+ (Game1.currentLocation.IsOutdoors ? 0f : x * 1f / 10000f) + 1f / 10000f + 1f / 10000f);
+		}
+
+		// Other draw method overrides added only to use custom texture:
+
+		public override void draw(SpriteBatch spriteBatch, int xNonTile, int yNonTile, float layerDepth, float alpha = 1f)
+		{
+			if (this.isTemporarilyInvisible)
+			{
+				return;
+			}
+
+			Vector2 scaleFactor = this.getScale() * Game1.pixelZoom;
+			Vector2 position = Game1.GlobalToLocal(
+				viewport: Game1.viewport,
+				globalPosition: new Vector2(xNonTile, yNonTile));
+			Rectangle destination = new(
+				x: (int)(position.X - (scaleFactor.X / 2f)) + ((this.shakeTimer > 0) ? Game1.random.Next(-1, 2) : 0),
+				y: (int)(position.Y - (scaleFactor.Y / 2f)) + ((this.shakeTimer > 0) ? Game1.random.Next(-1, 2) : 0),
+				width: (int)(64f + scaleFactor.X),
+				height: (int)(128f + (scaleFactor.Y / 2f)));
+			spriteBatch.Draw(
+				texture: ModEntry.MachineTexture,
+				destinationRectangle: destination,
+				sourceRectangle: Propagator.PropagatorSource,
+				color: Color.White * alpha,
+				rotation: 0f,
+				origin: Vector2.Zero,
+				effects: SpriteEffects.None,
+				layerDepth: layerDepth);
+		}
+
+		public override void drawAsProp(SpriteBatch b)
+		{
+			if (this.isTemporarilyInvisible)
+			{
+				return;
+			}
+
+			Vector2 scale = this.getScale() * Game1.pixelZoom;
+			Vector2 position = Game1.GlobalToLocal(
+				viewport: Game1.viewport,
+				globalPosition: (this.TileLocation + new Vector2(x: 0, y: -1)) * Game1.tileSize);
+			b.Draw(
+				destinationRectangle: new Rectangle(
+					x: (int)(position.X - (scale.X / 2f)),
+					y: (int)(position.Y - (scale.Y / 2f)),
+					width: (int)(64f + scale.X),
+					height: (int)(128f + (scale.Y / 2f))),
+				texture: ModEntry.MachineTexture,
+				sourceRectangle: Propagator.PropagatorSource,
+				color: Color.White,
+				rotation: 0f,
+				origin: Vector2.Zero,
+				effects: SpriteEffects.None,
+				layerDepth: Math.Clamp(value: ((this.TileLocation.Y + 1) * Game1.tileSize - 1) / 10000f, min: 0, max: 1));
+		}
+
+		public override void drawWhenHeld(SpriteBatch spriteBatch, Vector2 objectPosition, Farmer f)
+		{
+			spriteBatch.Draw(
+				texture: ModEntry.MachineTexture,
+				position: objectPosition,
+				sourceRectangle: Propagator.PropagatorSource,
+				color: Color.White,
+				rotation: 0f,
+				origin: Vector2.Zero,
+				scale: Game1.pixelZoom,
+				effects: SpriteEffects.None,
+				layerDepth: Math.Max(0f, (f.getStandingY() + 3f) / 10000f));
+		}
+
+		public override void drawInMenu(SpriteBatch spriteBatch, Vector2 location, float scaleSize, float transparency, float layerDepth, StackDrawType drawStackNumber, Color color, bool drawShadow)
+		{
+			const float tinyScale = 3f;
+			bool shouldDrawStackNumber = ((drawStackNumber == StackDrawType.Draw && this.maximumStackSize() > 1 && this.Stack > 1)
+					|| drawStackNumber == StackDrawType.Draw_OneInclusive)
+				&& scaleSize > 0.3f
+				&& this.Stack != int.MaxValue;
+			if (this.IsRecipe)
+			{
+				shouldDrawStackNumber = false;
+				transparency = 0.5f;
+				scaleSize *= 0.75f;
+			}
+
+			spriteBatch.Draw(
+				texture: ModEntry.MachineTexture,
+				position: location + new Vector2(value: 1) * Game1.tileSize / 2,
+				sourceRectangle: Propagator.PropagatorSource,
+				color: color * transparency,
+				rotation: 0f,
+				origin: Propagator.PropagatorSource.Size.ToVector2() / 2,
+				scale: Game1.pixelZoom * (((double)scaleSize < 0.2) ? scaleSize : (scaleSize / 2f)),
+				effects: SpriteEffects.None,
+				layerDepth: layerDepth);
+
+			if (shouldDrawStackNumber)
+			{
+				Utility.drawTinyDigits(
+					toDraw: this.Stack,
+					b: spriteBatch,
+					position: location + new Vector2(
+						x: Game1.tileSize - Utility.getWidthOfTinyDigitString(this.Stack, tinyScale * scaleSize) + (tinyScale * scaleSize),
+						y: Game1.tileSize - (18f * scaleSize) + 2f),
+					scale: tinyScale * scaleSize,
+					layerDepth: 1f,
+					c: color);
+			}
+
+			if (this.IsRecipe)
+			{
+				const int size = Game1.smallestTileSize;
+				spriteBatch.Draw(
+					texture: Game1.objectSpriteSheet,
+					position: location + new Vector2(value: size),
+					sourceRectangle: Game1.getSourceRectForStandardTileSheet(
+						tileSheet: Game1.objectSpriteSheet,
+						tilePosition: 451,
+						width: size,
+						height: size),
+					color: color,
+					rotation: 0f,
+					origin: Vector2.Zero,
+					scale: tinyScale,
+					effects: SpriteEffects.None,
+					layerDepth: layerDepth + 0.0001f);
+			}
 		}
 
 		public override Item getOne()
