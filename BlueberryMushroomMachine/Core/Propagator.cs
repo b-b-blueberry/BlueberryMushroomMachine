@@ -431,7 +431,7 @@ namespace BlueberryMushroomMachine
 			if (who is not null)
 			{
 				if (!((who.currentLocation is Cellar && ModEntry.Config.WorksInCellar)
-					|| (who.currentLocation is FarmCave && ModEntry.Config.WorksInFarmCave)
+					|| (who.currentLocation is FarmCave or IslandFarmCave && ModEntry.Config.WorksInFarmCave)
 					|| (who.currentLocation is BuildableGameLocation && ModEntry.Config.WorksInBuildings)
 					|| (who.currentLocation is FarmHouse && ModEntry.Config.WorksInFarmHouse)
 					|| (who.currentLocation.IsGreenhouse && ModEntry.Config.WorksInGreenhouse)
