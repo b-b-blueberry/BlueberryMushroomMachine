@@ -1,6 +1,5 @@
 using BlueberryMushroomMachine.Editors;
 using GenericModConfigMenu;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -11,7 +10,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Rectangle = Microsoft.Xna.Framework.Rectangle;
 using Object = StardewValley.Object;
+using Microsoft.Xna.Framework;
+using StardewValley.Locations;
 
 namespace BlueberryMushroomMachine
 {
@@ -344,30 +346,75 @@ namespace BlueberryMushroomMachine
 		/// <returns>Frame for mushroom growth progress.</returns>
 		public static int GetOverlayGrowthFrame(float currentDays, int goalDays, int quantity, int max)
 		{
-			float maths = (quantity - 1 + ((float)currentDays / goalDays)) * goalDays / ((max - 1) * goalDays)
-				* ModValues.OverlayMushroomFrames;
-			return Math.Clamp(value: (int)maths, min: 0, max: ModValues.OverlayMushroomFrames);
+			int frames = ModValues.OverlayMushroomFrames - 1;
+			float maths = quantity == max ? frames : frames
+				* (quantity - 1 + (currentDays / goalDays))
+				* goalDays / (max * goalDays);
+			return (int)Math.Clamp(value: maths, min: 0, max: frames);
 		}
 
 		/// <summary>
-		/// Generates a clipping rectangle for the overlay appropriate
-		/// to the current held mushroom, and its held quantity.
+		/// Generates a clipping rectangle for the mushroom overlay,
+		/// appropriate to the current held mushroom, and its held quantity.
 		/// Undefined mushrooms will use their default object rectangle.
 		/// </summary>
-		/// <returns></returns>
-		public static Rectangle GetOverlaySourceRect(int index, int whichFrame)
+		/// <returns>Source rectangle for mushroom overlay from overlay texture.</returns>
+		public static Rectangle GetOverlaySourceRect(GameLocation location, int index, int whichFrame)
 		{
-			return Enum.IsDefined(enumType: typeof(Mushrooms), value: index)
+			int frames = ModValues.OverlayMushroomFrames;
+			bool isBasicMushroom = Enum.IsDefined(enumType: typeof(Mushrooms), value: index);
+			Point size = isBasicMushroom
+				? Propagator.OverlaySize
+				: new Point(x: Game1.smallestTileSize, y: Game1.smallestTileSize);
+			return isBasicMushroom
 				? new Rectangle(
-					x: whichFrame * 16,
-					y: GetMushroomSourceRectIndex(index: index) * 32,
-					width: 16,
-					height: 32)
+					x: (ModEntry.IsDarkLocation(location) ? size.X * frames : 0) + whichFrame * size.X,
+					y: GetMushroomSourceRectIndex(index: index) * size.Y,
+					width: size.X,
+					height: size.Y)
 				: Game1.getSourceRectForStandardTileSheet(
 					tileSheet: Game1.objectSpriteSheet,
 					tilePosition: index,
-					width: Game1.smallestTileSize,
-					height: Game1.smallestTileSize);
+					width: size.X,
+					height: size.Y);
+		}
+
+		/// <summary>
+		/// Generates a clipping rectangle for the propagator machine,
+		/// appropriate to the current location.
+		/// </summary>
+		/// <returns>Source rectangle for propagator from machine texture.</returns>
+		public static Rectangle GetMachineSourceRect(GameLocation location, Vector2 tile)
+		{
+			// random magical maths to pick a value
+			// based on a predictable but scattered pattern for the current tile
+			return Game1.getSourceRectForStandardTileSheet(
+					tileSheet: ModEntry.MachineTexture,
+					tilePosition: (ModEntry.IsDarkLocation(location) ? 2 : 0) + ((tile.X + tile.Y) % 3 == 1 ? 1 : 0),
+					width: Propagator.PropagatorSize.X,
+					height: Propagator.PropagatorSize.Y);
+		}
+
+		/// <summary>
+		/// Assigns an arbitrary flip value to some given tile coordinates.
+		/// </summary>
+		/// <returns>Whether object at the current tile is flipped.</returns>
+		public static bool GetMachineIsFlipped(Vector2 tile)
+		{
+			// random magical maths to pick a value
+			// based on a predictable but scattered pattern for the current tile
+			// distinct from arbitrary alternate sprite value
+			return (tile.X + tile.Y) % 4 == 1;
+		}
+
+		/// <summary>
+		/// Check for dark locations, used to determine the visual style of the propagator.
+		/// </summary>
+		/// <param name="location">Location to check.</param>
+		/// <returns>Whether the given location is 'dark', or otherwise cave-flavoured.</returns>
+		public static bool IsDarkLocation(GameLocation location)
+		{
+			return location is FarmCave or IslandFarmCave;
 		}
 
 		public static bool IsValidMushroom(Object o)
@@ -391,9 +438,9 @@ namespace BlueberryMushroomMachine
 		{
 			return index switch
 			{
-				(int)Mushrooms.Morel => 0,
+				(int)Mushrooms.Morel => 2,
 				(int)Mushrooms.Chantarelle => 1,
-				(int)Mushrooms.Common => 2,
+				(int)Mushrooms.Common => 0,
 				(int)Mushrooms.Red => 3,
 				(int)Mushrooms.Purple => 4,
 				_ => -1

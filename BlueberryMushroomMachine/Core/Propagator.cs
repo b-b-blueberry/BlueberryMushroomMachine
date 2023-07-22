@@ -24,8 +24,9 @@ namespace BlueberryMushroomMachine
 
 		// Common definitions
 		public static string PropagatorDisplayName => ModEntry.I18n.Get("machine.name");
-		public static Rectangle PropagatorSource = new(x: 0, y: 0, width: 16, height: 32);
-		public const int PropagatorWorkingMinutes = 999999;
+		public static Point PropagatorSize => new(x: 16, y: 32);
+		public static Point OverlaySize => new(x: 24, y: 32);
+		public static int PropagatorWorkingMinutes => 999999;
 
 		public Propagator() : this(tileLocation: Vector2.Zero)
 		{
@@ -513,32 +514,37 @@ namespace BlueberryMushroomMachine
 
 		public override void draw(SpriteBatch b, int x, int y, float alpha = 1f)
 		{
+			Point scaleSizeToPulse(Point size, Vector2 pulse) => (size.ToVector2() * Game1.pixelZoom + new Vector2(x: pulse.X, y: pulse.Y / 2)).ToPoint();
+			
 			Point shake = this.shakeTimer < 1
 				? Point.Zero
 				: new Point(x: Game1.random.Next(-1, 2), Game1.random.Next(-1, 2));
-			Vector2 pulseAmount = ModEntry.Config.PulseWhenGrowing
+			Vector2 pulse = ModEntry.Config.PulseWhenGrowing
 				? this.getScale() * Game1.pixelZoom
 				: Vector2.One;
 			Vector2 position = Game1.GlobalToLocal(
 				viewport: Game1.viewport,
 				globalPosition: new Vector2(x: x, y: y - 1) * Game1.tileSize);
-			Rectangle destRect = new(
-					(int)(position.X - pulse.X / 2f) + shake.X,
-					(int)(position.Y - pulse.Y / 2f) + shake.Y,
-					(int)(Game1.tileSize + pulse.X),
-					(int)(Game1.tileSize * 2 + pulse.Y / 2f));
+			Rectangle destination = new(
+				location: (position - pulse / 2).ToPoint() + shake,
+				size: scaleSizeToPulse(size: Propagator.PropagatorSize, pulse: pulse));
+			Rectangle source = ModEntry.GetMachineSourceRect(
+				location: Game1.currentLocation,
+				tile: this.TileLocation);
+			float layerDepth = Math.Max(0.0f, ((y + 1) * Game1.tileSize - 24) / 10000f)
+				+ (Game1.currentLocation.IsOutdoors ? 0f : x * 1f / 10000f);
+			bool isFlipped = ModEntry.GetMachineIsFlipped(tile: this.TileLocation);
 
 			// Draw the base sprite
-			b.Draw(
-					texture: ModEntry.MachineTexture,
-					destinationRectangle: destRect,
-					sourceRectangle: Propagator.PropagatorSource,
-					color: Color.White * alpha,
-					rotation: 0f,
-					origin: Vector2.Zero,
-					effects: SpriteEffects.None,
-					layerDepth: Math.Max(0.0f, ((y + 1) * Game1.tileSize - 24) / 10000f)
-						+ (Game1.currentLocation.IsOutdoors ? 0f : x * 1f / 10000f));
+			Propagator.DrawMachine(
+				spriteBatch: b,
+				destination: destination,
+				origin: Vector2.Zero,
+				color: Color.White,
+				alpha: alpha,
+				layerDepth: layerDepth,
+				source: source,
+				isFlipped: isFlipped);
 
 			// End here if no mushrooms are held
 			if (this.SourceMushroomIndex < 1)
@@ -547,18 +553,30 @@ namespace BlueberryMushroomMachine
 			}
 
 			// Draw the held object overlay
-			bool isCustomMushroom = !Enum.IsDefined(enumType: typeof(ModEntry.Mushrooms), value: this.SourceMushroomIndex);
+			bool isBasicMushroom = Enum.IsDefined(enumType: typeof(ModEntry.Mushrooms), value: this.SourceMushroomIndex);
 			int whichFrame = ModEntry.GetOverlayGrowthFrame(
 				currentDays: this.DaysToMature,
 				goalDays: this.DefaultDaysToMature,
 				quantity: this.heldObject.Value?.Stack ?? 0,
 				max: this.MaximumStack);
+			int frames = ModValues.OverlayMushroomFrames;
 
-			if (isCustomMushroom)
+			if (isBasicMushroom)
 			{
-				float growthRatio = (whichFrame + 1f) / (ModValues.OverlayMushroomFrames + 1f);
+				// Centre mushroom overlay on base sprite
+				destination.Offset(amount: (source.Size.ToVector2() - Propagator.OverlaySize.ToVector2()) * Game1.pixelZoom / 2);
+				destination.Size = scaleSizeToPulse(size: Propagator.OverlaySize, pulse: pulse);
+				source = ModEntry.GetOverlaySourceRect(
+					location: Game1.currentLocation,
+					index: this.SourceMushroomIndex,
+					whichFrame: whichFrame);
+			}
+			else
+			{
+				// Scale custom mushroom object sprite to growth ratio
+				float growthRatio = whichFrame / frames;
 				float growthScale = Math.Min(0.8f, growthRatio) + 0.2f;
-				destRect = new Rectangle(
+				destination = new Rectangle(
 					x: (int)(position.X - pulse.X / 2f) + shake.X + (int)(32 * (1 - growthScale))
 						+ (int)(pulse.X * growthScale / 4),
 					y: (int)(position.Y - pulse.Y / 2f) + shake.Y + 48 + (int)(32 * (1 - growthScale))
@@ -567,19 +585,20 @@ namespace BlueberryMushroomMachine
 					height: (int)((Game1.tileSize + pulse.Y / 2f) * growthScale));
 			}
 
+
 			b.Draw(
-				texture: !isCustomMushroom ? ModEntry.OverlayTexture : Game1.objectSpriteSheet,
-				destinationRectangle: destRect,
-				sourceRectangle: ModEntry.GetOverlaySourceRect(index: this.SourceMushroomIndex, whichFrame: whichFrame),
+				texture: isBasicMushroom ? ModEntry.OverlayTexture : Game1.objectSpriteSheet,
+				destinationRectangle: destination,
+				sourceRectangle: source,
 				color: Color.White,
 				rotation: 0f,
 				origin: Vector2.Zero,
-				effects: SpriteEffects.None,
+				effects: isFlipped ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
 				layerDepth: Math.Max(0.0f, ((y + 1) * Game1.tileSize - 24) / 10000f)
 					+ (Game1.currentLocation.IsOutdoors ? 0f : x * 1f / 10000f) + 1f / 10000f + 1f / 10000f);
 		}
 
-		// Other draw method overrides added only to use custom texture:
+		// Other draw method overrides added only to use custom machine texture in place of objects/craftables texture for base sprite:
 
 		public override void draw(SpriteBatch spriteBatch, int xNonTile, int yNonTile, float layerDepth, float alpha = 1f)
 		{
@@ -595,17 +614,17 @@ namespace BlueberryMushroomMachine
 			Rectangle destination = new(
 				x: (int)(position.X - (scaleFactor.X / 2f)) + ((this.shakeTimer > 0) ? Game1.random.Next(-1, 2) : 0),
 				y: (int)(position.Y - (scaleFactor.Y / 2f)) + ((this.shakeTimer > 0) ? Game1.random.Next(-1, 2) : 0),
-				width: (int)(64f + scaleFactor.X),
-				height: (int)(128f + (scaleFactor.Y / 2f)));
-			spriteBatch.Draw(
-				texture: ModEntry.MachineTexture,
-				destinationRectangle: destination,
-				sourceRectangle: Propagator.PropagatorSource,
-				color: Color.White * alpha,
-				rotation: 0f,
+				width: (int)(Game1.tileSize + scaleFactor.X),
+				height: (int)(Game1.tileSize * 2 + (scaleFactor.Y / 2f)));
+			Propagator.DrawMachine(
+				spriteBatch: spriteBatch,
+				destination: destination,
 				origin: Vector2.Zero,
-				effects: SpriteEffects.None,
-				layerDepth: layerDepth);
+				color: Color.White,
+				alpha: alpha,
+				layerDepth: layerDepth,
+				source: ModEntry.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation),
+				isFlipped: ModEntry.GetMachineIsFlipped(tile: this.TileLocation));
 		}
 
 		public override void drawAsProp(SpriteBatch b)
@@ -619,33 +638,37 @@ namespace BlueberryMushroomMachine
 			Vector2 position = Game1.GlobalToLocal(
 				viewport: Game1.viewport,
 				globalPosition: (this.TileLocation + new Vector2(x: 0, y: -1)) * Game1.tileSize);
-			b.Draw(
-				destinationRectangle: new Rectangle(
-					x: (int)(position.X - (scale.X / 2f)),
-					y: (int)(position.Y - (scale.Y / 2f)),
-					width: (int)(64f + scale.X),
-					height: (int)(128f + (scale.Y / 2f))),
-				texture: ModEntry.MachineTexture,
-				sourceRectangle: Propagator.PropagatorSource,
-				color: Color.White,
-				rotation: 0f,
+			Rectangle destination = new(
+				x: (int)(position.X - (scale.X / 2f)),
+				y: (int)(position.Y - (scale.Y / 2f)),
+				width: (int)(Game1.tileSize + scale.X),
+				height: (int)(Game1.tileSize * 2 + (scale.Y / 2f)));
+			float layerDepth = Math.Clamp(value: ((this.TileLocation.Y + 1) * Game1.tileSize - 1) / 10000f, min: 0, max: 1);
+			Propagator.DrawMachine(
+				spriteBatch: b,
+				destination: destination,
 				origin: Vector2.Zero,
-				effects: SpriteEffects.None,
-				layerDepth: Math.Clamp(value: ((this.TileLocation.Y + 1) * Game1.tileSize - 1) / 10000f, min: 0, max: 1));
+				color: Color.White,
+				alpha: 1f,
+				layerDepth: layerDepth,
+				source: ModEntry.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation),
+				isFlipped: ModEntry.GetMachineIsFlipped(tile: this.TileLocation));
 		}
 
 		public override void drawWhenHeld(SpriteBatch spriteBatch, Vector2 objectPosition, Farmer f)
 		{
-			spriteBatch.Draw(
-				texture: ModEntry.MachineTexture,
-				position: objectPosition,
-				sourceRectangle: Propagator.PropagatorSource,
-				color: Color.White,
-				rotation: 0f,
+			Rectangle destination = new(
+				location: objectPosition.ToPoint(),
+				size: (Propagator.PropagatorSize.ToVector2() * Game1.pixelZoom).ToPoint());
+			float layerDepth = Math.Max(0f, (f.getStandingY() + 3f) / 10000f);
+			Propagator.DrawMachine(
+				spriteBatch: spriteBatch,
+				destination: destination,
 				origin: Vector2.Zero,
-				scale: Game1.pixelZoom,
-				effects: SpriteEffects.None,
-				layerDepth: Math.Max(0f, (f.getStandingY() + 3f) / 10000f));
+				color: Color.White,
+				alpha: 1f,
+				layerDepth: layerDepth,
+				source: ModEntry.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation));
 		}
 
 		public override void drawInMenu(SpriteBatch spriteBatch, Vector2 location, float scaleSize, float transparency, float layerDepth, StackDrawType drawStackNumber, Color color, bool drawShadow)
@@ -662,16 +685,19 @@ namespace BlueberryMushroomMachine
 				scaleSize *= 0.75f;
 			}
 
-			spriteBatch.Draw(
-				texture: ModEntry.MachineTexture,
-				position: location + new Vector2(value: 1) * Game1.tileSize / 2,
-				sourceRectangle: Propagator.PropagatorSource,
-				color: color * transparency,
-				rotation: 0f,
-				origin: Propagator.PropagatorSource.Size.ToVector2() / 2,
-				scale: Game1.pixelZoom * (((double)scaleSize < 0.2) ? scaleSize : (scaleSize / 2f)),
-				effects: SpriteEffects.None,
-				layerDepth: layerDepth);
+			float scale = Game1.pixelZoom * (((double)scaleSize < 0.2) ? scaleSize : (scaleSize / 2f));
+			Vector2 position = location + new Vector2(value: 1) * Game1.tileSize / 2;
+			Rectangle destination = new(
+				location: position.ToPoint(),
+				size: (Propagator.PropagatorSize.ToVector2() * scale).ToPoint());
+			Propagator.DrawMachine(
+				spriteBatch: spriteBatch,
+				destination: destination,
+				origin: Propagator.PropagatorSize.ToVector2() / 2,
+				color: color,
+				alpha: transparency,
+				layerDepth: layerDepth,
+				source: Game1.uiMode ? null : ModEntry.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation));
 
 			if (shouldDrawStackNumber)
 			{
@@ -709,6 +735,19 @@ namespace BlueberryMushroomMachine
 		public override Item getOne()
 		{
 			return new Propagator(tileLocation: Vector2.Zero);
+		}
+
+		protected static void DrawMachine(SpriteBatch spriteBatch, Rectangle destination, Vector2 origin, Color color, float alpha, float layerDepth, Rectangle? source = null, bool isFlipped = false)
+		{
+			spriteBatch.Draw(
+				texture: ModEntry.MachineTexture,
+				destinationRectangle: destination,
+				sourceRectangle: source ?? new Rectangle(location: Point.Zero, size: Propagator.PropagatorSize),
+				color: Color.White * alpha,
+				rotation: 0f,
+				origin: origin,
+				effects: isFlipped ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
+				layerDepth: layerDepth);
 		}
 	}
 }

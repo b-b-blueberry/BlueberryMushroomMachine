@@ -1,8 +1,11 @@
 ﻿using HarmonyLib; // el diavolo
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using StardewValley.Menus;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace BlueberryMushroomMachine
 {
@@ -15,6 +18,12 @@ namespace BlueberryMushroomMachine
 			harmony.Patch(
 				original: AccessTools.Method(type: typeof(CraftingRecipe), name: "createItem"),
 				postfix: new HarmonyMethod(methodType: typeof(HarmonyPatches), methodName: nameof(HarmonyPatches.CraftingRecipe_CreateItem_Postfix)));
+			harmony.Patch(
+				original: AccessTools.Method(type: typeof(CraftingRecipe), name: "drawMenuView"),
+				postfix: new HarmonyMethod(methodType: typeof(HarmonyPatches), methodName: nameof(HarmonyPatches.CraftingRecipe_DrawMenuView_Postfix)));
+			harmony.Patch(
+				original: AccessTools.Method(type: typeof(CraftingPage), name: "layoutRecipes"),
+				postfix: new HarmonyMethod(methodType: typeof(HarmonyPatches), methodName: nameof(HarmonyPatches.CraftingPage_LayoutRecipes_Postfix)));
 			harmony.Patch(
 				original: AccessTools.Method(type: typeof(CraftingPage), name: "performHoverAction"),
 				postfix: new HarmonyMethod(methodType: typeof(HarmonyPatches), methodName: nameof(HarmonyPatches.CraftingPage_HoverAction_Postfix)));
@@ -33,6 +42,43 @@ namespace BlueberryMushroomMachine
 			// Intercept machine crafts with a Propagator subclass,
 			// rather than a generic nonfunctional craftable
 			__result = new Propagator(tileLocation: Game1.player.getTileLocation());
+		}
+
+		internal static void CraftingRecipe_DrawMenuView_Postfix(CraftingRecipe __instance, SpriteBatch b, int x, int y, float layerDepth = 0.88f, bool shadow = true)
+		{
+			if (__instance.name != ModValues.PropagatorInternalName)
+			{
+				return;
+			}
+
+			// Note that shadow param is ignored, this is to match base game behaviour
+			Utility.drawWithShadow(
+				b: b,
+				texture: ModEntry.MachineTexture,
+				position: new Vector2(x: x, y: y),
+				sourceRect: new Rectangle(location: Point.Zero, size: Propagator.PropagatorSize),
+				color: Color.White,
+				rotation: 0f,
+				origin: Vector2.Zero,
+				scale: Game1.pixelZoom,
+				flipped: false,
+				layerDepth: layerDepth);
+		}
+
+		internal static void CraftingPage_LayoutRecipes_Postfix(CraftingPage __instance)
+		{
+			var entries = __instance.pagesOfCraftingRecipes.SelectMany(dict => dict).Select(pair => (pair.Key, pair.Value));
+			foreach ((ClickableTextureComponent component, CraftingRecipe recipe) in entries)
+			{
+				if (recipe.name != ModValues.PropagatorInternalName)
+				{
+					continue;
+				}
+
+				// Draw custom texture for propagator recipes
+				component.texture = ModEntry.MachineTexture;
+				component.sourceRect = new Rectangle(location: Point.Zero, size: Propagator.PropagatorSize);
+			}
 		}
 
 		internal static void CraftingPage_HoverAction_Postfix(CraftingRecipe ___hoverRecipe)

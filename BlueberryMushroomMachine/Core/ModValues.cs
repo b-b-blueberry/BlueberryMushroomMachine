@@ -33,7 +33,7 @@ namespace BlueberryMushroomMachine
 			= ModValues.ConsoleCommandPrefix + "fix_ids";
 
 		// Objects
-		public const int OverlayMushroomFrames = 3;
+		public const int OverlayMushroomFrames = 4;
 		public const string ObjectDataFormat = "{0}/0/-300/Crafting -9/{1}/true/true/0";
 		public const string RecipeDataFormat = "388 20 709 1/Home/{0}/true/null";
 
