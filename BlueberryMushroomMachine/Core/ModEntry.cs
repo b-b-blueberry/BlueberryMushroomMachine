@@ -120,6 +120,16 @@ namespace BlueberryMushroomMachine
 					}
 					else
 					{
+						void onChanged(PropertyInfo property, object value)
+						{
+							object current = property.GetValue(ModEntry.Config);
+							if (current != value)
+							{
+								Log.D($"Config edit: {property.Name} - {current} => {value}",
+									ModEntry.Config.DebugMode);
+								property.SetValue(ModEntry.Config, value);
+							}
+						}
 						PropertyInfo property = typeof(Config).GetProperty(propertyName, flags);
 						Translation name = I18n.Get($"config.name.{i18n}");
 						Translation description = I18n.Get($"config.description.{i18n}");
@@ -128,12 +138,7 @@ namespace BlueberryMushroomMachine
 							gmcm.AddBoolOption(
 								mod: this.ModManifest,
 								getValue: () => (bool)property.GetValue(ModEntry.Config),
-								setValue: (bool value) =>
-								{
-									Log.D($"Config edit: {property.Name} - {property.GetValue(ModEntry.Config)} => {value}",
-										ModEntry.Config.DebugMode);
-									property.SetValue(ModEntry.Config, value);
-								},
+								setValue: (bool value) => onChanged(property: property, value: value),
 								name: () => name.HasValue() ? name : propertyName,
 								tooltip: () => description.HasValue() ? description : null);
 						}
@@ -142,12 +147,7 @@ namespace BlueberryMushroomMachine
 							gmcm.AddNumberOption(
 								mod: this.ModManifest,
 								getValue: () => (int)property.GetValue(ModEntry.Config),
-								setValue: (int value) =>
-								{
-									Log.D($"Config edit: {property.Name} - {property.GetValue(ModEntry.Config)} => {value}",
-										ModEntry.Config.DebugMode);
-									property.SetValue(ModEntry.Config, value);
-								},
+								setValue: (int value) => onChanged(property: property, value: value),
 								name: () => name.HasValue() ? name : propertyName,
 								tooltip: () => description.HasValue() ? description : null,
 								min: 1,
