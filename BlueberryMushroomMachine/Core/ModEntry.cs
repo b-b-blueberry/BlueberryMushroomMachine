@@ -1,19 +1,18 @@
 using BlueberryMushroomMachine.Editors;
 using GenericModConfigMenu;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Locations;
 using StardewValley.Objects;
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Rectangle = Microsoft.Xna.Framework.Rectangle;
 using Object = StardewValley.Object;
-using Microsoft.Xna.Framework;
-using StardewValley.Locations;
+using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
 namespace BlueberryMushroomMachine
 {

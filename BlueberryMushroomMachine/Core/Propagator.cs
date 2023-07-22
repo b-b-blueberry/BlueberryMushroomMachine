@@ -1,9 +1,9 @@
-﻿using System;
-using System.Xml.Serialization;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using StardewValley.Locations;
+using System;
+using System.Xml.Serialization;
 using Object = StardewValley.Object;
 
 namespace BlueberryMushroomMachine
