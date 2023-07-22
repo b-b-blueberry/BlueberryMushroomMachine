@@ -23,8 +23,14 @@ namespace BlueberryMushroomMachine
 		// Console
 		public static readonly string SpawnConsoleCommand
 			= "bb.bmm.spawn";
+		public static readonly string ConsoleCommandPrefix
+			= "bb.mm.";
+		public static readonly string GrowConsoleCommand
+			= ModValues.ConsoleCommandPrefix + "grow";
+		public static readonly string StatusConsoleCommand
+			= ModValues.ConsoleCommandPrefix + "status";
 		public static readonly string FixIdsConsoleCommand
-			= "bb.bmm.fix_ids";
+			= ModValues.ConsoleCommandPrefix + "fix_ids";
 
 		// Objects
 		public const int OverlayMushroomFrames = 3;

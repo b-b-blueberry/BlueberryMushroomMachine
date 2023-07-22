@@ -8,6 +8,7 @@ using StardewValley;
 using StardewValley.Objects;
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Object = StardewValley.Object;
@@ -200,10 +201,11 @@ namespace BlueberryMushroomMachine
 			{
 				Utility.ForAllLocations((GameLocation location) =>
 				{
-					foreach (Propagator propagator in location.Objects.Values.Where((Object o) => o is Propagator).Cast<Propagator>())
+					foreach (Propagator propagator in ModEntry.GetMachinesIn(location))
 					{
-						int id = _jsonAssetsAPI.GetObjectId(name: propagator.SourceMushroomName);
-						if (id != -1 && id != propagator.SourceMushroomIndex)
+						if (propagator.SourceMushroomName is not null
+							&& ModEntry._jsonAssetsAPI.GetObjectId(name: propagator.SourceMushroomName) is int id
+							&& id > 0 && id != propagator.SourceMushroomIndex)
 						{
 							Log.D($"Updating mushroom ID for mushroom propagator located at" +
 								$" {location.NameOrUniqueName}::{propagator.TileLocation}:" +
@@ -268,6 +270,40 @@ namespace BlueberryMushroomMachine
 			if (ModEntry.Config.DebugMode)
 			{
 				this.Helper.ConsoleCommands.Add(
+					name: ModValues.GrowConsoleCommand,
+					documentation: "DEBUG: Grows mushrooms held by propagators in the current location.",
+					callback: (string cmd, string[] args) =>
+					{
+						foreach (Propagator propagator in ModEntry.GetMachinesIn(Game1.currentLocation))
+						{
+							Log.D($"Grow (item: [{propagator.SourceMushroomIndex}]" +
+								$" {propagator.SourceMushroomName}" +
+								$" Q{propagator.SourceMushroomQuality}" +
+								$" at {Game1.currentLocation.Name} {propagator.TileLocation}",
+								ModEntry.Config.DebugMode);
+
+							propagator.GrowHeldMushroom();
+						}
+					});
+
+				this.Helper.ConsoleCommands.Add(
+					name: ModValues.StatusConsoleCommand,
+					documentation: "DEBUG: Prints state of propagators in the current location.",
+					callback: (string cmd, string[] args) =>
+					{
+						// TODO: DEBUG: 
+						foreach (Propagator propagator in ModEntry.GetMachinesIn(Game1.currentLocation))
+						{
+							Log.D($"Status (item: [{propagator.SourceMushroomIndex}]" +
+								$" {propagator.SourceMushroomName ?? "N/A"}x{propagator.heldObject?.Value?.Stack ?? 0}" +
+								$" Q{propagator.SourceMushroomQuality}" +
+								$" ({propagator.DaysToMature}/{propagator.DefaultDaysToMature} days +{propagator.RateToMature})" +
+								$" at {Game1.currentLocation.Name} {propagator.TileLocation}",
+								ModEntry.Config.DebugMode);
+						}
+					});
+
+				this.Helper.ConsoleCommands.Add(
 					name: ModValues.FixIdsConsoleCommand,
 					documentation: "DEBUG: Manually fix IDs of objects held by mushroom propagators.",
 					callback: (string cmd, string[] args) => this.FixIds());
@@ -286,6 +322,16 @@ namespace BlueberryMushroomMachine
 			ModValues.PropagatorIndex = 0;
 			ModValues.ObjectData = null;
 			ModValues.RecipeData = null;
+		}
+
+		/// <summary>
+		/// Fetches all propagator machines in a given location.
+		/// </summary>
+		/// <param name="location">Location to search.</param>
+		/// <returns>All objects of type propagator.</returns>
+		public static IEnumerable<Propagator> GetMachinesIn(GameLocation location)
+		{
+			return location.Objects.Values.Where((Object o) => o is Propagator).Cast<Propagator>();
 		}
 
 		/// <summary>

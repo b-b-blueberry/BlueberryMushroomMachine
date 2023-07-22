@@ -266,10 +266,7 @@ namespace BlueberryMushroomMachine
 				ModEntry.Config.DebugMode);
 
 			// Grow mushrooms overnight
-			if (this.SourceMushroomIndex > 0)
-			{
-				this.GrowHeldMushroom();
-			}
+			this.GrowHeldMushroom();
 		}
 
 		/// <summary>
@@ -277,7 +274,13 @@ namespace BlueberryMushroomMachine
 		/// </summary>
 		public void GrowHeldMushroom()
 		{
-			if (this.heldObject.Value is null)
+			if (this.SourceMushroomIndex <= 0)
+			{
+				Log.D("==> No source mushroom",
+					ModEntry.Config.DebugMode);
+				return;
+			}
+			else if (this.heldObject.Value is null)
 			{
 				// Set the extra mushroom object
 				this.PutExtraHeldMushroom(daysToMature: 0);
