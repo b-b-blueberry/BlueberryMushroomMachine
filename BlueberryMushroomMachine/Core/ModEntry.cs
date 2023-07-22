@@ -251,7 +251,7 @@ namespace BlueberryMushroomMachine
 			// Commands usable by all players
 
 			this.Helper.ConsoleCommands.Add(
-				name: ModValues.SpawnConsoleCommand,
+				name: ModValues.GiveConsoleCommand,
 				documentation: "Add one (or a given number of) mushroom propagator(s) to your inventory.",
 				callback: (string cmd, string[] args) =>
 				{

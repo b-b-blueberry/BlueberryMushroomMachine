@@ -21,10 +21,10 @@ namespace BlueberryMushroomMachine
 			= Path.Combine("assets", "events.json");
 
 		// Console
-		public static readonly string SpawnConsoleCommand
-			= "bb.bmm.spawn";
 		public static readonly string ConsoleCommandPrefix
 			= "bb.mm.";
+		public static readonly string GiveConsoleCommand
+			= ModValues.ConsoleCommandPrefix + "give";
 		public static readonly string GrowConsoleCommand
 			= ModValues.ConsoleCommandPrefix + "grow";
 		public static readonly string StatusConsoleCommand
