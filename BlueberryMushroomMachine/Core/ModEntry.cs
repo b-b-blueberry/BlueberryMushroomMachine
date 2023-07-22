@@ -283,7 +283,7 @@ namespace BlueberryMushroomMachine
 								$" at {Game1.currentLocation.Name} {propagator.TileLocation}",
 								ModEntry.Config.DebugMode);
 
-							propagator.GrowHeldMushroom();
+							propagator.GrowHeldObject();
 						}
 					});
 

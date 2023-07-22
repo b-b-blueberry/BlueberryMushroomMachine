@@ -89,8 +89,10 @@ namespace BlueberryMushroomMachine
 		/// Adds an instance of the given item to be used as a source mushroom by the machine,
 		/// and resets all growth and harvest variables.
 		/// </summary>
-		/// <param name="dropIn">Some instance of an object, hopefully a mushroom.</param>
-		public void PutSourceMushroom(Object dropIn)
+		/// <param name="dropIn">
+		/// Some instance of an object, hopefully a mushroom.
+		/// </param>
+		public void SetSourceObject(Object dropIn)
 		{
 			ModEntry.GetMushroomGrowthRate(o: dropIn, rate: out this.RateToMature);
 			ModEntry.GetMushroomMaximumQuantity(o: dropIn, quantity: out this.MaximumStack);
@@ -101,12 +103,23 @@ namespace BlueberryMushroomMachine
 			this.DaysToMature = 0;
 			this.MinutesUntilReady = Propagator.PropagatorWorkingMinutes;
 
-			Log.D($"PutSourceMushroom(item: [{dropIn.ParentSheetIndex}] {dropIn.Name} Q{dropIn.Quality}), stack to {this.MaximumStack}" +
+			Log.D($"SetSourceObject()"
+				+ $" (item:" +
+				$" [{this.SourceMushroomIndex}]" +
+				$" {this.SourceMushroomName ?? "N/A"}x{this.heldObject?.Value?.Stack ?? 0}" +
+				$" Q{this.SourceMushroomQuality})" +
+				$" ({this.DaysToMature}/{this.DefaultDaysToMature} days +{this.RateToMature})" +
 				$" at {Game1.currentLocation?.Name} {this.TileLocation}",
 				ModEntry.Config.DebugMode);
 		}
 
-		public void PutExtraHeldMushroom(float daysToMature)
+		/// <summary>
+		/// Starts propagator growth by adding a single held object.
+		/// </summary>
+		/// <param name="daysToMature">
+		/// Initial maturity value.
+		/// </param>
+		public void SetHeldObject(float daysToMature)
 		{
 			this.heldObject.Value = new Object(parentSheetIndex: this.SourceMushroomIndex, initialStack: 1);
 			this.DaysToMature = daysToMature;
@@ -118,12 +131,8 @@ namespace BlueberryMushroomMachine
 		{
 			Log.D($"PopByAction at {Game1.currentLocation?.Name} {this.TileLocation}",
 				ModEntry.Config.DebugMode);
-			if (this.SourceMushroomIndex > 0)
-			{
-				this.PopExposedMushroom(forceRemoveSource: false);
-				return true;
-			}
-			return false;
+
+			return this.PopHeldOrSourceObject(isSourceForcedOut: false);
 		}
 
 		public bool PopByTool()
@@ -134,7 +143,7 @@ namespace BlueberryMushroomMachine
 			if (this.SourceMushroomIndex > 0)
 			{
 				// Extract any held mushrooms from machine
-				this.PopExposedMushroom(forceRemoveSource: true);
+				this.PopHeldOrSourceObject(isSourceForcedOut: true);
 			}
 			else
 			{
@@ -144,9 +153,18 @@ namespace BlueberryMushroomMachine
 			return false;
 		}
 
-		public void PopExtraHeldMushrooms(bool giveNothing)
+		/// <summary>
+		/// Pops held objects, dropping them on the ground with respect to player professions.
+		/// </summary>
+		/// <param name="giveNothing">
+		/// Whether to destroy objects rather than dropping.
+		/// </param>
+		/// <returns>
+		/// Whether any objects were dropped when popped.
+		/// </returns>
+		public bool PopHeldObject(bool giveNothing)
 		{
-			Log.D($"PopExtraHeldMushrooms at {Game1.currentLocation?.Name} {this.TileLocation}",
+			Log.D($"PopHeldObject at {Game1.currentLocation?.Name} {this.TileLocation}",
 				ModEntry.Config.DebugMode);
 
 			// Incorporate Gatherer's skill effects for bonus quantity
@@ -155,6 +173,7 @@ namespace BlueberryMushroomMachine
 			{
 				popQuantity += 1;
 			}
+
 			// Incorporate Botanist's skill effects for bonus quality
 			int popQuality = Game1.player.professions.Contains(Farmer.botanist)
 				? Object.bestQuality
@@ -180,19 +199,26 @@ namespace BlueberryMushroomMachine
 
 			// Clear the extra mushroom data
 			this.heldObject.Value = null;
+			this.readyForHarvest.Value = false;
+			this.DaysToMature = 0;
+
+			return popQuantity > 0 && !giveNothing;
 		}
 
 		/// <summary>
 		/// Pops the extra mushrooms in the 'heldItem' slot if they exist, otherwise pops the source mushroom and resets to 'empty'.
 		/// </summary>
-		/// <param name="forceRemoveSource">
+		/// <param name="isSourceForcedOut">
 		/// Whether or not to pop the source mushroom in addition to any extra mushrooms, leaving the machine considered 'empty'.
 		/// </param>
-		public void PopExposedMushroom(bool forceRemoveSource)
+		/// <returns>
+		/// Whether any objects were popped.
+		/// </returns>
+		public bool PopHeldOrSourceObject(bool isSourceForcedOut)
 		{
 			if (ModEntry.Config.DebugMode)
 			{
-				Log.D($"PopExposedMushroom(forceRemoveSource: {forceRemoveSource})"
+				Log.D($"PopHeldOrSourceObject(forceRemoveSource: {isSourceForcedOut})"
 					+ $" (item:" +
 					$" [{this.SourceMushroomIndex}]" +
 					$" {this.SourceMushroomName ?? "N/A"}x{this.heldObject?.Value?.Stack ?? 0}" +
@@ -202,28 +228,32 @@ namespace BlueberryMushroomMachine
 					ModEntry.Config.DebugMode);
 			}
 
-			Game1.playSound("harvest");
-			bool popSource = forceRemoveSource || this.heldObject.Value is null;
+			bool isPopped = false;
+			bool isPoppingSource = isSourceForcedOut || this.heldObject.Value is null;
 
 			// Pop the extra mushrooms, leaving the source mushroom to continue producing
 			if (this.heldObject.Value is not null)
 			{
-				this.PopExtraHeldMushrooms(giveNothing: false);
+				Game1.playSound("harvest");
+				isPopped = this.PopHeldObject(giveNothing: false);
 				this.MinutesUntilReady = Propagator.PropagatorWorkingMinutes;
 			}
 
 			// Pop the source mushroom, resetting the machine to default
-			if (popSource)
+			if (isPoppingSource && this.SourceMushroomIndex > 0)
 			{
-				Log.D("PopExposed source",
+				Log.D("PopHeldOrSourceObject source",
 					ModEntry.Config.DebugMode);
+
+				Game1.playSound("harvest");
+				isPopped = true;
 				Object o = new (parentSheetIndex: this.SourceMushroomIndex, initialStack: 1)
 				{
-					Quality = SourceMushroomQuality
+					Quality = this.SourceMushroomQuality
 				};
 				Game1.createItemDebris(
 					item: o,
-					origin: (this.TileLocation + new Vector2(0.5f)) * Game1.tileSize, direction: -1);
+					origin: (this.TileLocation + new Vector2(value: 0.5f)) * Game1.tileSize, direction: -1);
 				this.MaximumStack = 1;
 				this.SourceMushroomName = null;
 				this.SourceMushroomIndex = 0;
@@ -231,9 +261,7 @@ namespace BlueberryMushroomMachine
 				this.MinutesUntilReady = -1;
 			}
 
-			// Reset growing and harvesting info
-			this.readyForHarvest.Value = false;
-			this.DaysToMature = 0;
+			return isPopped;
 		}
 
 		/// <summary>
@@ -267,13 +295,13 @@ namespace BlueberryMushroomMachine
 				ModEntry.Config.DebugMode);
 
 			// Grow mushrooms overnight
-			this.GrowHeldMushroom();
+			this.GrowHeldObject();
 		}
 
 		/// <summary>
 		/// Updates object quantity as the per-day maturity timer counts up to its threshold for this type of mushroom.
 		/// </summary>
-		public void GrowHeldMushroom()
+		public void GrowHeldObject()
 		{
 			if (this.SourceMushroomIndex <= 0)
 			{
@@ -284,7 +312,7 @@ namespace BlueberryMushroomMachine
 			else if (this.heldObject.Value is null)
 			{
 				// Set the extra mushroom object
-				this.PutExtraHeldMushroom(daysToMature: 0);
+				this.SetHeldObject(daysToMature: 0);
 				Log.D("==> Set first extra mushroom",
 					ModEntry.Config.DebugMode);
 				return;
@@ -321,9 +349,15 @@ namespace BlueberryMushroomMachine
 		/// Override method for any player cursor passive or active interactions with the machine.
 		/// Permits triggering behaviours to pop mushrooms before they're ready with the action hotkey.
 		/// </summary>
-		/// <param name="who">Farmer interacting with the machine.</param>
-		/// <param name="justCheckingForActivity">Whether the cursor hovered or clicked.</param>
-		/// <returns>Whether to continue with base method.</returns>
+		/// <param name="who">
+		/// Farmer interacting with the machine.
+		/// </param>
+		/// <param name="justCheckingForActivity">
+		/// Whether the cursor hovered or clicked.
+		/// </param>
+		/// <returns>
+		/// Whether to continue with base method.
+		/// </returns>
 		public override bool checkForAction(Farmer who, bool justCheckingForActivity = false)
 		{
 			if (!justCheckingForActivity)
@@ -354,7 +388,9 @@ namespace BlueberryMushroomMachine
 		/// and pop root mushrooms without extras.
 		/// Author's note: The mushrooms are never ready.
 		/// </summary>
-		/// <returns>Whether to continue with base behaviour.</returns>
+		/// <returns>
+		/// Whether to continue with base behaviour.
+		/// </returns>
 		public override bool performUseAction(GameLocation location)
 		{
 			Log.D($"performUseAction at {Game1.currentLocation?.Name} {this.TileLocation}",
@@ -367,7 +403,9 @@ namespace BlueberryMushroomMachine
 		/// Overrides the usual hit-with-tool behaviour to change the requirements
 		/// and allow for popping held mushrooms at different stages.
 		/// </summary>
-		/// <returns>Whether or not to continue with base behaviour.</returns>
+		/// <returns>
+		/// Whether or not to continue with base behaviour.
+		/// </returns>
 		public override bool performToolAction(Tool t, GameLocation location)
 		{
 			Log.D($"performToolAction at {Game1.currentLocation?.Name} {this.TileLocation}",
@@ -387,9 +425,15 @@ namespace BlueberryMushroomMachine
 		/// Overrides usual use-with-item behaviours to limit the set to working in
 		/// specific locations with specific items, as well as other funky behaviour.
 		/// </summary>
-		/// <param name="dropIn">Our candidate item.</param>
-		/// <param name="probe">Base game check for determining outcomes without consequences.</param>
-		/// <param name="who">Farmer using the machine.</param>
+		/// <param name="dropIn">
+		/// Our candidate item.
+		/// </param>
+		/// <param name="probe">
+		/// Base game check for determining outcomes without consequences.
+		/// </param>
+		/// <param name="who">
+		/// Farmer using the machine.
+		/// </param>
 		/// <returns>
 		/// Whether the dropIn object is appropriate for this machine in this context.
 		/// </returns>
@@ -458,26 +502,33 @@ namespace BlueberryMushroomMachine
 			{
 				if (this.heldObject.Value is not null)
 				{
-					// Get a copy of the root mushroom
-					this.PopExposedMushroom(forceRemoveSource: false);
+					// Remove held objects
+					this.PopHeldOrSourceObject(isSourceForcedOut: false);
 				}
 				else if (!ModEntry.Config.OnlyToolsCanRemoveRootMushrooms)
 				{
-					// Remove the root mushroom if it hasn't settled overnight
-					this.PopExposedMushroom(forceRemoveSource: true);
+					// Replace the source object
+					this.PopHeldOrSourceObject(isSourceForcedOut: true);
 				}
 			}
 
-			// Accept the deposited item as the new source mushroom
-			this.PutSourceMushroom(dropIn: obj);
-			who?.currentLocation.playSound("Ship");
-			return true;
+			// Set dropIn object as source mushroom
+			if (this.SourceMushroomIndex <= 0)
+			{
+				this.SetSourceObject(dropIn: obj);
+				who?.currentLocation.playSound("Ship");
+				return true;
+			}
+
+			return false;
 		}
 
 		/// <summary>
 		/// Awkward override to specifically place a Propagator instead of a BigCraftable Object.
 		/// </summary>
-		/// <returns>True</returns>
+		/// <returns>
+		/// True
+		/// </returns>
 		public override bool placementAction(GameLocation location, int x, int y, Farmer who = null)
 		{
 			Vector2 tile = new Vector2(x: x, y: y) / Game1.tileSize;
