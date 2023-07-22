@@ -317,32 +317,39 @@ namespace BlueberryMushroomMachine
 					ModEntry.Config.DebugMode);
 				return;
 			}
-			else
+			else if (this.heldObject.Value.Stack >= this.MaximumStack)
 			{
 				// Stop adding to the stack when its limit is reached
+				Log.D("==> At max stack size",
+					ModEntry.Config.DebugMode);
+				return;
+			}
+			else
+			{
+				// Progress the growth of the stack per each mushroom's rate
+				this.DaysToMature += (int)Math.Floor(Math.Max(1, this.DefaultDaysToMature * this.RateToMature));
+				this.MinutesUntilReady = Propagator.PropagatorWorkingMinutes;
+
+				// When the held mushroom reaches a maturity stage, the stack grows
+				if (this.DaysToMature >= this.DefaultDaysToMature)
+				{
+					++this.heldObject.Value.Stack;
+					this.DaysToMature = 0;
+				}
+
+				Log.D($"==> Grown to {this.heldObject.Value.Stack}/{this.MaximumStack}" +
+					$" ({this.DaysToMature}/{this.DefaultDaysToMature} days +{this.RateToMature})",
+					ModEntry.Config.DebugMode);
+
+				// Mark as ready on max stack size
 				if (this.heldObject.Value.Stack >= this.MaximumStack)
 				{
 					Log.D("==> Reached max stack size, ready for harvest",
 						ModEntry.Config.DebugMode);
 					this.MinutesUntilReady = 0;
 					this.readyForHarvest.Value = true;
-					return;
-				}
-
-				// Progress the growth of the stack per each mushroom's rate
-				this.DaysToMature += (int)Math.Floor(Math.Max(1, this.DefaultDaysToMature * this.RateToMature));
-				this.MinutesUntilReady = Propagator.PropagatorWorkingMinutes;
-
-				if (this.DaysToMature >= this.DefaultDaysToMature)
-				{
-					// When the held mushroom reaches a maturity stage, the stack grows
-					++this.heldObject.Value.Stack;
-					this.DaysToMature = 0;
 				}
 			}
-			Log.D($"==> Grown to {this.heldObject.Value.Stack}/{this.MaximumStack}" +
-				$" ({this.DaysToMature}/{this.DefaultDaysToMature} days +{this.RateToMature})",
-				ModEntry.Config.DebugMode);
 		}
 
 		/// <summary>
