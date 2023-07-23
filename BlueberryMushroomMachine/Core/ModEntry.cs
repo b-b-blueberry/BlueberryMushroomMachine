@@ -278,8 +278,9 @@ namespace BlueberryMushroomMachine
 						foreach (Propagator propagator in ModEntry.GetMachinesIn(Game1.currentLocation))
 						{
 							Log.D($"Grow (item: [{propagator.SourceMushroomIndex}]" +
-								$" {propagator.SourceMushroomName}" +
+								$" {propagator.SourceMushroomName ?? "N/A"}x{propagator.heldObject?.Value?.Stack ?? 0}" +
 								$" Q{propagator.SourceMushroomQuality}" +
+								$" ({propagator.Growth}/{Propagator.DefaultDaysToGrow} days +{propagator.GrowthRatePerDay})" +
 								$" at {Game1.currentLocation.Name} {propagator.TileLocation}",
 								ModEntry.Config.DebugMode);
 
@@ -298,7 +299,7 @@ namespace BlueberryMushroomMachine
 							Log.D($"Status (item: [{propagator.SourceMushroomIndex}]" +
 								$" {propagator.SourceMushroomName ?? "N/A"}x{propagator.heldObject?.Value?.Stack ?? 0}" +
 								$" Q{propagator.SourceMushroomQuality}" +
-								$" ({propagator.DaysToMature}/{propagator.DefaultDaysToMature} days +{propagator.RateToMature})" +
+								$" ({propagator.Growth}/{Propagator.DefaultDaysToGrow} days +{propagator.GrowthRatePerDay})" +
 								$" at {Game1.currentLocation.Name} {propagator.TileLocation}",
 								ModEntry.Config.DebugMode);
 						}
@@ -340,15 +341,15 @@ namespace BlueberryMushroomMachine
 		/// </summary>
 		/// <param name="currentDays">Current days since last growth.</param>
 		/// <param name="goalDays">Number of days when next growth happens.</param>
-		/// <param name="quantity">Current count of mushrooms.</param>
-		/// <param name="max">Maximum amount of mushrooms of this type.</param>
+		/// <param name="currentStack">Current count of mushrooms.</param>
+		/// <param name="goalStack">Maximum amount of mushrooms of this type.</param>
 		/// <returns>Frame for mushroom growth progress.</returns>
-		public static int GetOverlayGrowthFrame(float currentDays, int goalDays, int quantity, int max)
+		public static int GetOverlayGrowthFrame(float currentDays, int goalDays, int currentStack, int goalStack)
 		{
 			int frames = ModValues.OverlayMushroomFrames - 1;
-			float maths = quantity == max ? frames : frames
-				* (quantity - 1 + (currentDays / goalDays))
-				* goalDays / (max * goalDays);
+			float maths = currentStack == goalStack ? frames : frames
+				* (currentStack - 1 + (currentDays / goalDays))
+				* goalDays / (goalStack * goalDays);
 			return (int)Math.Clamp(value: maths, min: 0, max: frames);
 		}
 
@@ -390,8 +391,8 @@ namespace BlueberryMushroomMachine
 			return Game1.getSourceRectForStandardTileSheet(
 					tileSheet: ModEntry.MachineTexture,
 					tilePosition: (ModEntry.IsDarkLocation(location) ? 2 : 0) + ((tile.X + tile.Y) % 3 == 1 ? 1 : 0),
-					width: Propagator.PropagatorSize.X,
-					height: Propagator.PropagatorSize.Y);
+					width: Propagator.MachineSize.X,
+					height: Propagator.MachineSize.Y);
 		}
 
 		/// <summary>

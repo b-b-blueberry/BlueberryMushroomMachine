@@ -56,7 +56,7 @@ namespace BlueberryMushroomMachine
 				b: b,
 				texture: ModEntry.MachineTexture,
 				position: new Vector2(x: x, y: y),
-				sourceRect: new Rectangle(location: Point.Zero, size: Propagator.PropagatorSize),
+				sourceRect: new Rectangle(location: Point.Zero, size: Propagator.MachineSize),
 				color: Color.White,
 				rotation: 0f,
 				origin: Vector2.Zero,
@@ -77,7 +77,7 @@ namespace BlueberryMushroomMachine
 
 				// Draw custom texture for propagator recipes
 				component.texture = ModEntry.MachineTexture;
-				component.sourceRect = new Rectangle(location: Point.Zero, size: Propagator.PropagatorSize);
+				component.sourceRect = new Rectangle(location: Point.Zero, size: Propagator.MachineSize);
 			}
 		}
 

@@ -12,21 +12,77 @@ namespace BlueberryMushroomMachine
 	public class Propagator : Object
 	{
 		// Source mushroom (placed by player)
+
+		/// <summary>
+		/// Name of root mushroom used as a template for the grown held object.
+		/// Used for persistent custom objects in SDV 1.5.
+		/// </summary>
 		public string SourceMushroomName;
+		/// <summary>
+		/// Unique ID of root mushroom used as a template for the grown held object.
+		/// Used for persistent base game objects in SDV 1.5.
+		/// </summary>
 		public int SourceMushroomIndex;
+		/// <summary>
+		/// Quality of root mushroom used as a template for the grown held object.
+		/// All grown objects will copy the quality of the source mushroom.
+		/// </summary>
 		public int SourceMushroomQuality;
 
 		// Extra mushrooms (grown overnight)
-		public readonly int DefaultDaysToMature;
-		public float RateToMature;
-		public float DaysToMature;
+
+		/// <summary>
+		/// Number of days, including day of placement, before a held object
+		/// with a growth rate of 1 will have its stack increased.
+		/// </summary>
+		public static int DefaultDaysToGrow => ModEntry.Config.MaximumDaysToMature;
+		/// <summary>
+		/// Number of days, including day of placement, before held object stack increases by one.
+		/// </summary>
+		public int DaysToGrowOnce => (int)(Propagator.DefaultDaysToGrow / this.GrowthRatePerDay);
+		/// <summary>
+		/// Number of days, including day of placement, before growth complete with maximum stack.
+		/// </summary>
+		public int DaysToReady => this.DaysToGrowOnce * this.MaximumStack;
+		/// <summary>
+		/// Rate to increase growth value as scaled to <see cref="Propagator.DefaultDaysToGrow"/>.
+		/// </summary>
+		public float GrowthRatePerDay;
+		/// <summary>
+		/// Current growth value as a proportion of <see cref="Propagator.DefaultDaysToGrow"/>.
+		/// Starting value of 0, increases each day, reset on reaching value of <see cref="Propagator.DefaultDaysToGrow"/>
+		/// </summary>
+		public float Growth;
+		/// <summary>
+		/// Stack size of held object on growth complete.
+		/// </summary>
 		public int MaximumStack;
 
 		// Common definitions
+
+		/// <summary>
+		/// Display name of all <see cref="Propagator"/> objects.
+		/// </summary>
 		public static string PropagatorDisplayName => ModEntry.I18n.Get("machine.name");
-		public static Point PropagatorSize => new(x: 16, y: 32);
+		/// <summary>
+		/// Display name of all <see cref="Propagator"/> objects.
+		/// </summary>
+		public static string PropagatorDescription => ModEntry.I18n.Get("machine.desc");
+		/// <summary>
+		/// Dimensions of machine sprite in source texture.
+		/// </summary>
+		public static Point MachineSize => new(x: Game1.smallestTileSize, y: Game1.smallestTileSize * 2);
+		/// <summary>
+		/// Dimensions of overlay sprite in source texture.
+		/// </summary>
 		public static Point OverlaySize => new(x: 24, y: 32);
-		public static int PropagatorWorkingMinutes => 999999;
+		/// <summary>
+		/// Minutes between the current time and the next ready day.
+		/// This value does not affect actual growth rate, only the player-visible timer: growth occurs separately after each day.
+		/// </summary>
+		public int PropagatorWorkingMinutes => Utility.CalculateMinutesUntilMorning(
+			currentTime: Game1.timeOfDay,
+			daysElapsed: this.DaysToReady - 1);
 
 		public Propagator() : this(tileLocation: Vector2.Zero)
 		{
@@ -36,7 +92,6 @@ namespace BlueberryMushroomMachine
 		{
 			this.TileLocation = tileLocation;
 			this.Initialise();
-			this.DefaultDaysToMature = ModEntry.Config.MaximumDaysToMature;
 		}
 
 		protected override string loadDisplayName()
@@ -46,7 +101,7 @@ namespace BlueberryMushroomMachine
 
 		public override string getDescription()
 		{
-			return ModEntry.I18n.Get("machine.desc");
+			return Propagator.PropagatorDescription;
 		}
 
 		/// <summary>
@@ -88,14 +143,14 @@ namespace BlueberryMushroomMachine
 		/// </param>
 		public void SetSourceObject(Object dropIn)
 		{
-			ModEntry.GetMushroomGrowthRate(o: dropIn, rate: out this.RateToMature);
+			ModEntry.GetMushroomGrowthRate(o: dropIn, rate: out this.GrowthRatePerDay);
 			ModEntry.GetMushroomMaximumQuantity(o: dropIn, quantity: out this.MaximumStack);
 
 			this.SourceMushroomName = dropIn.Name;
 			this.SourceMushroomIndex = dropIn.ParentSheetIndex;
 			this.SourceMushroomQuality = dropIn.Quality;
-			this.DaysToMature = 0;
-			this.MinutesUntilReady = Propagator.PropagatorWorkingMinutes;
+			this.Growth = 0;
+			this.MinutesUntilReady = this.PropagatorWorkingMinutes;
 		}
 
 		/// <summary>
@@ -107,9 +162,9 @@ namespace BlueberryMushroomMachine
 		public void SetHeldObject(float daysToMature)
 		{
 			this.heldObject.Value = new Object(parentSheetIndex: this.SourceMushroomIndex, initialStack: 1);
-			this.DaysToMature = daysToMature;
+			this.Growth = daysToMature;
 			this.readyForHarvest.Value = false;
-			this.MinutesUntilReady = Propagator.PropagatorWorkingMinutes;
+			this.MinutesUntilReady = this.PropagatorWorkingMinutes;
 		}
 
 		public bool PopByAction()
@@ -176,7 +231,7 @@ namespace BlueberryMushroomMachine
 			// Clear the extra mushroom data
 			this.heldObject.Value = null;
 			this.readyForHarvest.Value = false;
-			this.DaysToMature = 0;
+			this.Growth = 0;
 
 			return popQuantity > 0 && !giveNothing;
 		}
@@ -200,7 +255,7 @@ namespace BlueberryMushroomMachine
 			{
 				Game1.playSound("harvest");
 				isPopped = this.PopHeldObject(giveNothing: false);
-				this.MinutesUntilReady = Propagator.PropagatorWorkingMinutes;
+				this.MinutesUntilReady = this.PropagatorWorkingMinutes;
 			}
 
 			// Pop the source mushroom, resetting the machine to default
@@ -272,14 +327,13 @@ namespace BlueberryMushroomMachine
 			else
 			{
 				// Progress the growth of the stack per each mushroom's rate
-				this.DaysToMature += (int)Math.Floor(Math.Max(1, this.DefaultDaysToMature * this.RateToMature));
-				this.MinutesUntilReady = Propagator.PropagatorWorkingMinutes;
+				this.Growth += (int)Math.Floor(Math.Max(1, this.GrowthRatePerDay * Propagator.DefaultDaysToGrow));
 
 				// When the held mushroom reaches a maturity stage, the stack grows
-				if (this.DaysToMature >= this.DefaultDaysToMature)
+				if (this.Growth >= Propagator.DefaultDaysToGrow)
 				{
 					++this.heldObject.Value.Stack;
-					this.DaysToMature = 0;
+					this.Growth = 0;
 				}
 
 				// Mark as ready on max stack size
@@ -501,7 +555,7 @@ namespace BlueberryMushroomMachine
 				globalPosition: new Vector2(x: x, y: y - 1) * Game1.tileSize);
 			Rectangle destination = new(
 				location: (position - pulse / 2).ToPoint() + shake,
-				size: scaleSizeToPulse(size: Propagator.PropagatorSize, pulse: pulse));
+				size: scaleSizeToPulse(size: Propagator.MachineSize, pulse: pulse));
 			Rectangle source = ModEntry.GetMachineSourceRect(
 				location: Game1.currentLocation,
 				tile: this.TileLocation);
@@ -529,10 +583,10 @@ namespace BlueberryMushroomMachine
 			// Draw the held object overlay
 			bool isBasicMushroom = Enum.IsDefined(enumType: typeof(ModEntry.Mushrooms), value: this.SourceMushroomIndex);
 			int whichFrame = ModEntry.GetOverlayGrowthFrame(
-				currentDays: this.DaysToMature,
-				goalDays: this.DefaultDaysToMature,
-				quantity: this.heldObject.Value?.Stack ?? 0,
-				max: this.MaximumStack);
+				currentDays: this.Growth,
+				goalDays: Propagator.DefaultDaysToGrow,
+				currentStack: this.heldObject.Value?.Stack ?? 0,
+				goalStack: this.MaximumStack);
 			int frames = ModValues.OverlayMushroomFrames;
 
 			if (isBasicMushroom)
@@ -633,7 +687,7 @@ namespace BlueberryMushroomMachine
 		{
 			Rectangle destination = new(
 				location: objectPosition.ToPoint(),
-				size: (Propagator.PropagatorSize.ToVector2() * Game1.pixelZoom).ToPoint());
+				size: (Propagator.MachineSize.ToVector2() * Game1.pixelZoom).ToPoint());
 			float layerDepth = Math.Max(0f, (f.getStandingY() + 3f) / 10000f);
 			Propagator.DrawMachine(
 				spriteBatch: spriteBatch,
@@ -663,11 +717,11 @@ namespace BlueberryMushroomMachine
 			Vector2 position = location + new Vector2(value: 1) * Game1.tileSize / 2;
 			Rectangle destination = new(
 				location: position.ToPoint(),
-				size: (Propagator.PropagatorSize.ToVector2() * scale).ToPoint());
+				size: (Propagator.MachineSize.ToVector2() * scale).ToPoint());
 			Propagator.DrawMachine(
 				spriteBatch: spriteBatch,
 				destination: destination,
-				origin: Propagator.PropagatorSize.ToVector2() / 2,
+				origin: Propagator.MachineSize.ToVector2() / 2,
 				color: color,
 				alpha: transparency,
 				layerDepth: layerDepth,
@@ -716,7 +770,7 @@ namespace BlueberryMushroomMachine
 			spriteBatch.Draw(
 				texture: ModEntry.MachineTexture,
 				destinationRectangle: destination,
-				sourceRectangle: source ?? new Rectangle(location: Point.Zero, size: Propagator.PropagatorSize),
+				sourceRectangle: source ?? new Rectangle(location: Point.Zero, size: Propagator.MachineSize),
 				color: Color.White * alpha,
 				rotation: 0f,
 				origin: origin,
