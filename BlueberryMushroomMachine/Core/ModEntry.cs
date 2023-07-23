@@ -33,7 +33,8 @@ namespace BlueberryMushroomMachine
 		public static Texture2D MachineTexture { get; private set; }
 		public static Texture2D OverlayTexture { get; private set; }
 
-		private static IJsonAssetsAPI _jsonAssetsAPI;
+		internal static IJsonAssetsAPI JsonAssetsAPI;
+		internal static IBetterCrafting CraftingAPI;
 
 		public override void Entry(IModHelper helper)
 		{
@@ -63,12 +64,12 @@ namespace BlueberryMushroomMachine
 			spacecoreApi.RegisterSerializerType(typeof(Propagator));
 
 			// JA setup
-			ModEntry._jsonAssetsAPI = this.Helper.ModRegistry
+			ModEntry.JsonAssetsAPI = this.Helper.ModRegistry
 				.GetApi<IJsonAssetsAPI>
 				("spacechase0.JsonAssets");
-			if (ModEntry._jsonAssetsAPI is not null)
+			if (ModEntry.JsonAssetsAPI is not null)
 			{
-				ModEntry._jsonAssetsAPI.IdsFixed += (object sender, EventArgs e) => this.FixIds();
+				ModEntry.JsonAssetsAPI.IdsFixed += (object sender, EventArgs e) => this.FixIds();
 			}
 			else
 			{
@@ -162,6 +163,14 @@ namespace BlueberryMushroomMachine
 					}
 				}
 			}
+
+			// Better Crafting setup
+			ModEntry.CraftingAPI = this.Helper.ModRegistry.GetApi<IBetterCrafting>("leclair.bettercrafting");
+			if (ModEntry.CraftingAPI is not null)
+			{
+				ModEntry.CraftingAPI.AddRecipeProvider(provider: new BetterCraftingRecipeProvider());
+				ModEntry.CraftingAPI.AddRecipesToDefaultCategory(cooking: false, categoryId: "machinery", recipeNames: new[] { ModValues.PropagatorInternalName });
+			}
 		}
 
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
@@ -205,7 +214,7 @@ namespace BlueberryMushroomMachine
 					foreach (Propagator propagator in ModEntry.GetMachinesIn(location))
 					{
 						if (propagator.SourceMushroomName is not null
-							&& ModEntry._jsonAssetsAPI.GetObjectId(name: propagator.SourceMushroomName) is int id
+							&& ModEntry.JsonAssetsAPI.GetObjectId(name: propagator.SourceMushroomName) is int id
 							&& id > 0 && id != propagator.SourceMushroomIndex)
 						{
 							Log.D($"Updating mushroom ID for mushroom propagator located at" +
