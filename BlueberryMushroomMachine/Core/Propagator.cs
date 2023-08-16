@@ -109,9 +109,25 @@ namespace BlueberryMushroomMachine
 		/// </summary>
 		private void Initialise()
 		{
+			// Basic properties
 			this.Name = ModValues.PropagatorInternalName;
 			this.ParentSheetIndex = ModValues.PropagatorIndex;
 			this.DisplayName = this.loadDisplayName();
+
+			// Craftable properties
+			this.CanBeSetDown = true;
+			this.bigCraftable.Value = true;
+			this.boundingBox.Value = new Rectangle(
+				location: (this.TileLocation * Game1.tileSize).ToPoint(),
+				size: new Point(Game1.tileSize));
+
+			// Object properties from data values
+			if (ModValues.ObjectData is null)
+			{
+				// Ignore setup if data values not defined,
+				// e.g. objects populated for save on main menu
+				return;
+			}
 
 			string[] fields = ModValues.ObjectData.Split('/');
 			this.Price = Convert.ToInt32(fields[1]);
@@ -119,19 +135,14 @@ namespace BlueberryMushroomMachine
 			string[] typeAndCategory = fields[3].Split(' ');
 			this.Type = typeAndCategory[0];
 			if (typeAndCategory.Length > 1)
+			{
 				this.Category = Convert.ToInt32(typeAndCategory[1]);
+			}
 			this.setOutdoors.Value = Convert.ToBoolean(fields[5]);
 			this.setIndoors.Value = Convert.ToBoolean(fields[6]);
 			this.Fragility = Convert.ToInt32(fields[7]);
 			this.isLamp.Value = fields.Length > 8 && Convert.ToBoolean(fields[8]);
-
-			this.CanBeSetDown = true;
-			this.bigCraftable.Value = true;
 			this.initializeLightSource(tileLocation: this.TileLocation);
-
-			this.boundingBox.Value = new Rectangle(
-				location: (this.TileLocation * Game1.tileSize).ToPoint(),
-				size: new Point(Game1.tileSize));
 		}
 
 		/// <summary>

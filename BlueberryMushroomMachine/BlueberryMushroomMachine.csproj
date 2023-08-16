@@ -13,6 +13,6 @@
 
 	<ItemGroup>
 		<Reference Include="Newtonsoft.Json" HintPath="$(GamePath)/smapi-internal/Newtonsoft.Json.dll" Private="false" />
-		<PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.0.2" />
+		<PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
 	</ItemGroup>
 </Project>
