@@ -154,8 +154,8 @@ namespace BlueberryMushroomMachine
 		/// </param>
 		public void SetSourceObject(Object dropIn)
 		{
-			ModEntry.GetMushroomGrowthRate(o: dropIn, rate: out this.GrowthRatePerDay);
-			ModEntry.GetMushroomMaximumQuantity(o: dropIn, quantity: out this.MaximumStack);
+			Utils.GetMushroomGrowthRate(o: dropIn, rate: out this.GrowthRatePerDay);
+			Utils.GetMushroomMaximumQuantity(o: dropIn, quantity: out this.MaximumStack);
 
 			this.SourceMushroomName = dropIn.Name;
 			this.SourceMushroomIndex = dropIn.ParentSheetIndex;
@@ -455,7 +455,7 @@ namespace BlueberryMushroomMachine
 			}
 
 			// Ignore things that are not mushrooms
-			if (dropIn is not Object obj || obj.bigCraftable.Value || !ModEntry.IsValidMushroom(o: obj))
+			if (dropIn is not Object obj || obj.bigCraftable.Value || !Utils.IsValidMushroom(o: obj))
 			{
 				return false;
 			}
@@ -567,12 +567,12 @@ namespace BlueberryMushroomMachine
 			Rectangle destination = new(
 				location: (position - pulse / 2).ToPoint() + shake,
 				size: scaleSizeToPulse(size: Propagator.MachineSize, pulse: pulse));
-			Rectangle source = ModEntry.GetMachineSourceRect(
+			Rectangle source = Utils.GetMachineSourceRect(
 				location: Game1.currentLocation,
 				tile: this.TileLocation);
 			float layerDepth = Math.Max(0.0f, ((y + 1) * Game1.tileSize - 24) / 10000f)
 				+ (Game1.currentLocation.IsOutdoors ? 0f : x * 1f / 10000f);
-			bool isFlipped = ModEntry.GetMachineIsFlipped(tile: this.TileLocation);
+			bool isFlipped = Utils.GetMachineIsFlipped(tile: this.TileLocation);
 
 			// Draw the base sprite
 			Propagator.DrawMachine(
@@ -593,7 +593,7 @@ namespace BlueberryMushroomMachine
 
 			// Draw the held object overlay
 			bool isBasicMushroom = Enum.IsDefined(enumType: typeof(ModEntry.Mushrooms), value: this.SourceMushroomIndex);
-			int whichFrame = ModEntry.GetOverlayGrowthFrame(
+			int whichFrame = Utils.GetOverlayGrowthFrame(
 				currentDays: this.Growth,
 				goalDays: Propagator.DefaultDaysToGrow,
 				currentStack: this.heldObject.Value?.Stack ?? 0,
@@ -605,7 +605,7 @@ namespace BlueberryMushroomMachine
 				// Centre mushroom overlay on base sprite
 				destination.Offset(amount: (source.Size.ToVector2() - Propagator.OverlaySize.ToVector2()) * Game1.pixelZoom / 2);
 				destination.Size = scaleSizeToPulse(size: Propagator.OverlaySize, pulse: pulse);
-				source = ModEntry.GetOverlaySourceRect(
+				source = Utils.GetOverlaySourceRect(
 					location: Game1.currentLocation,
 					index: this.SourceMushroomIndex,
 					whichFrame: whichFrame);
@@ -662,8 +662,8 @@ namespace BlueberryMushroomMachine
 				color: Color.White,
 				alpha: alpha,
 				layerDepth: layerDepth,
-				source: ModEntry.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation),
-				isFlipped: ModEntry.GetMachineIsFlipped(tile: this.TileLocation));
+				source: Utils.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation),
+				isFlipped: Utils.GetMachineIsFlipped(tile: this.TileLocation));
 		}
 
 		public override void drawAsProp(SpriteBatch b)
@@ -690,8 +690,8 @@ namespace BlueberryMushroomMachine
 				color: Color.White,
 				alpha: 1f,
 				layerDepth: layerDepth,
-				source: ModEntry.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation),
-				isFlipped: ModEntry.GetMachineIsFlipped(tile: this.TileLocation));
+				source: Utils.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation),
+				isFlipped: Utils.GetMachineIsFlipped(tile: this.TileLocation));
 		}
 
 		public override void drawWhenHeld(SpriteBatch spriteBatch, Vector2 objectPosition, Farmer f)
@@ -707,7 +707,7 @@ namespace BlueberryMushroomMachine
 				color: Color.White,
 				alpha: 1f,
 				layerDepth: layerDepth,
-				source: ModEntry.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation));
+				source: Utils.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation));
 		}
 
 		public override void drawInMenu(SpriteBatch spriteBatch, Vector2 location, float scaleSize, float transparency, float layerDepth, StackDrawType drawStackNumber, Color color, bool drawShadow)
@@ -736,7 +736,7 @@ namespace BlueberryMushroomMachine
 				color: color,
 				alpha: transparency,
 				layerDepth: layerDepth,
-				source: Game1.uiMode ? null : ModEntry.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation));
+				source: Game1.uiMode ? null : Utils.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation));
 
 			if (shouldDrawStackNumber)
 			{
