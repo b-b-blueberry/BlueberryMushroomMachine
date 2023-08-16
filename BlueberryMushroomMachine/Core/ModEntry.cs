@@ -55,112 +55,133 @@ namespace BlueberryMushroomMachine
 			}
 
 			// Json Assets setup
-			ModEntry.JsonAssetsAPI = this.Helper.ModRegistry
-				.GetApi<IJsonAssetsAPI>
-				("spacechase0.JsonAssets");
-			if (ModEntry.JsonAssetsAPI is not null)
+			try
 			{
-				ModEntry.JsonAssetsAPI.IdsFixed += (object sender, EventArgs e) => Utils.FixPropagatorObjectIds();
+				ModEntry.JsonAssetsAPI = this.Helper.ModRegistry
+					.GetApi<IJsonAssetsAPI>
+					("spacechase0.JsonAssets");
+				if (ModEntry.JsonAssetsAPI is not null)
+				{
+					ModEntry.JsonAssetsAPI.IdsFixed += (object sender, EventArgs e) => Utils.FixPropagatorObjectIds();
+				}
+				else
+				{
+					Log.D($"Json Assets not found, deshuffling will not happen",
+						ModEntry.Config.DebugMode);
+				}
 			}
-			else
+			catch (Exception e)
 			{
-				Log.D($"Json Assets not found, deshuffling will not happen",
-					ModEntry.Config.DebugMode);
+				Log.E($"Failed to add Json Assets behaviours.{Environment.NewLine}{e}");
 			}
 
 			// Generic Mod Config Menu setup
-			IGenericModConfigMenuApi gmcm = this.Helper.ModRegistry
-				.GetApi<IGenericModConfigMenuApi>
-				("spacechase0.GenericModConfigMenu");
-			if (gmcm is not null)
+			try
 			{
-				// Register config
-				gmcm.Register(
-					mod: this.ModManifest,
-					reset: () => ModEntry.Config = new(),
-					save: () => this.Helper.WriteConfig(ModEntry.Config));
-
-				// Register config options
-				var entries = new (string i18n, string propertyName, Type type)[] {
-					("working_rules", null, null),
-
-					("disabled_for_fruit_cave", nameof(ModEntry.Config.DisabledForFruitCave), typeof(bool)),
-					("recipe_always_available", nameof(ModEntry.Config.RecipeAlwaysAvailable), typeof(bool)),
-					("maximum_days_to_mature", nameof(ModEntry.Config.MaximumDaysToMature), typeof(int)),
-					("maximum_quantity_limits_doubled", nameof(ModEntry.Config.MaximumQuantityLimitsDoubled), typeof(bool)),
-					("only_tools_remove_root_mushrooms", nameof(ModEntry.Config.OnlyToolsCanRemoveRootMushrooms), typeof(bool)),
-					("pulse_when_growing", nameof(ModEntry.Config.PulseWhenGrowing), typeof(bool)),
-
-					("working_areas", null, null),
-
-					("works_in_cellar", nameof(ModEntry.Config.WorksInCellar), typeof(bool)),
-					("works_in_farm_cave", nameof(ModEntry.Config.WorksInFarmCave), typeof(bool)),
-					("works_in_buildings", nameof(ModEntry.Config.WorksInBuildings), typeof(bool)),
-					("works_in_farmhouse", nameof(ModEntry.Config.WorksInFarmHouse), typeof(bool)),
-					("works_in_greenhouse", nameof(ModEntry.Config.WorksInGreenhouse), typeof(bool)),
-					("works_outdoors", nameof(ModEntry.Config.WorksOutdoors), typeof(bool))
-				};
-				foreach ((string i18n, string propertyName, Type type) in entries)
+				IGenericModConfigMenuApi gmcm = this.Helper.ModRegistry
+					.GetApi<IGenericModConfigMenuApi>
+					("spacechase0.GenericModConfigMenu");
+				if (gmcm is not null)
 				{
-					BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
-					if (propertyName is null)
+					// Register config
+					gmcm.Register(
+						mod: this.ModManifest,
+						reset: () => ModEntry.Config = new(),
+						save: () => this.Helper.WriteConfig(ModEntry.Config));
+
+					// Register config options
+					var entries = new (string i18n, string propertyName, Type type)[] {
+						("working_rules", null, null),
+
+						("disabled_for_fruit_cave", nameof(ModEntry.Config.DisabledForFruitCave), typeof(bool)),
+						("recipe_always_available", nameof(ModEntry.Config.RecipeAlwaysAvailable), typeof(bool)),
+						("maximum_days_to_mature", nameof(ModEntry.Config.MaximumDaysToMature), typeof(int)),
+						("maximum_quantity_limits_doubled", nameof(ModEntry.Config.MaximumQuantityLimitsDoubled), typeof(bool)),
+						("only_tools_remove_root_mushrooms", nameof(ModEntry.Config.OnlyToolsCanRemoveRootMushrooms), typeof(bool)),
+						("pulse_when_growing", nameof(ModEntry.Config.PulseWhenGrowing), typeof(bool)),
+
+						("working_areas", null, null),
+
+						("works_in_cellar", nameof(ModEntry.Config.WorksInCellar), typeof(bool)),
+						("works_in_farm_cave", nameof(ModEntry.Config.WorksInFarmCave), typeof(bool)),
+						("works_in_buildings", nameof(ModEntry.Config.WorksInBuildings), typeof(bool)),
+						("works_in_farmhouse", nameof(ModEntry.Config.WorksInFarmHouse), typeof(bool)),
+						("works_in_greenhouse", nameof(ModEntry.Config.WorksInGreenhouse), typeof(bool)),
+						("works_outdoors", nameof(ModEntry.Config.WorksOutdoors), typeof(bool))
+					};
+					foreach ((string i18n, string propertyName, Type type) in entries)
 					{
-						Translation title = ModEntry.I18n.Get($"config.title.{i18n}");
-						gmcm.AddSectionTitle(
-							this.ModManifest,
-							text: () => title.HasValue() ? title : i18n);
-					}
-					else
-					{
-						void onChanged(PropertyInfo property, object value)
+						BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
+						if (propertyName is null)
 						{
-							object current = property.GetValue(ModEntry.Config);
-							if (current != value)
-							{
-								Log.D($"Config edit: {property.Name} - {current} => {value}",
-									ModEntry.Config.DebugMode);
-								property.SetValue(ModEntry.Config, value);
-							}
-						}
-						PropertyInfo property = typeof(Config).GetProperty(propertyName, flags);
-						Translation name = I18n.Get($"config.name.{i18n}");
-						Translation description = I18n.Get($"config.description.{i18n}");
-						if (type == typeof(bool))
-						{
-							gmcm.AddBoolOption(
-								mod: this.ModManifest,
-								getValue: () => (bool)property.GetValue(ModEntry.Config),
-								setValue: (bool value) => onChanged(property: property, value: value),
-								name: () => name.HasValue() ? name : propertyName,
-								tooltip: () => description.HasValue() ? description : null);
-						}
-						else if (type == typeof(int))
-						{
-							gmcm.AddNumberOption(
-								mod: this.ModManifest,
-								getValue: () => (int)property.GetValue(ModEntry.Config),
-								setValue: (int value) => onChanged(property: property, value: value),
-								name: () => name.HasValue() ? name : propertyName,
-								tooltip: () => description.HasValue() ? description : null,
-								min: 1,
-								max: 28,
-								formatValue: (int value) => $"{value:0}");
+							Translation title = ModEntry.I18n.Get($"config.title.{i18n}");
+							gmcm.AddSectionTitle(
+								this.ModManifest,
+								text: () => title.HasValue() ? title : i18n);
 						}
 						else
 						{
-							Log.D($"Unsupported config entry type {type}",
-								ModEntry.Config.DebugMode);
+							void onChanged(PropertyInfo property, object value)
+							{
+								object current = property.GetValue(ModEntry.Config);
+								if (current != value)
+								{
+									Log.D($"Config edit: {property.Name} - {current} => {value}",
+										ModEntry.Config.DebugMode);
+									property.SetValue(ModEntry.Config, value);
+								}
+							}
+							PropertyInfo property = typeof(Config).GetProperty(propertyName, flags);
+							Translation name = I18n.Get($"config.name.{i18n}");
+							Translation description = I18n.Get($"config.description.{i18n}");
+							if (type == typeof(bool))
+							{
+								gmcm.AddBoolOption(
+									mod: this.ModManifest,
+									getValue: () => (bool)property.GetValue(ModEntry.Config),
+									setValue: (bool value) => onChanged(property: property, value: value),
+									name: () => name.HasValue() ? name : propertyName,
+									tooltip: () => description.HasValue() ? description : null);
+							}
+							else if (type == typeof(int))
+							{
+								gmcm.AddNumberOption(
+									mod: this.ModManifest,
+									getValue: () => (int)property.GetValue(ModEntry.Config),
+									setValue: (int value) => onChanged(property: property, value: value),
+									name: () => name.HasValue() ? name : propertyName,
+									tooltip: () => description.HasValue() ? description : null,
+									min: 1,
+									max: 28,
+									formatValue: (int value) => $"{value:0}");
+							}
+							else
+							{
+								Log.D($"Unsupported config entry type {type}",
+									ModEntry.Config.DebugMode);
+							}
 						}
 					}
 				}
 			}
+			catch (Exception e)
+			{
+				Log.E($"Failed to add Generic Mod Config Menu behaviours.{Environment.NewLine}{e}");
+			}
 
 			// Better Crafting setup
-			ModEntry.CraftingAPI = this.Helper.ModRegistry.GetApi<IBetterCrafting>("leclair.bettercrafting");
-			if (ModEntry.CraftingAPI is not null)
+			try
 			{
-				ModEntry.CraftingAPI.AddRecipeProvider(provider: new BetterCraftingRecipeProvider());
-				ModEntry.CraftingAPI.AddRecipesToDefaultCategory(cooking: false, categoryId: "machinery", recipeNames: new[] { ModValues.PropagatorInternalName });
+				ModEntry.CraftingAPI = this.Helper.ModRegistry.GetApi<IBetterCrafting>("leclair.bettercrafting");
+				if (ModEntry.CraftingAPI is not null)
+				{
+					ModEntry.CraftingAPI.AddRecipeProvider(provider: new BetterCraftingRecipeProvider());
+					ModEntry.CraftingAPI.AddRecipesToDefaultCategory(cooking: false, categoryId: "machinery", recipeNames: new[] { ModValues.PropagatorInternalName });
+				}
+			}
+			catch (Exception e)
+			{
+				Log.E($"Failed to add Better Crafting behaviours.{Environment.NewLine}{e}");
 			}
 
 			return true;
@@ -168,6 +189,7 @@ namespace BlueberryMushroomMachine
 
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
 		{
+			// Display mod config
 			try
 			{
 				if (ModEntry.Config.DebugMode)
@@ -190,7 +212,7 @@ namespace BlueberryMushroomMachine
 			}
 			catch (Exception ex)
 			{
-				Log.E($"Error in printing mod configuration.\n{ex}");
+				Log.E($"Failed to display mod config.{Environment.NewLine}{ex}");
 			}
 
 			// Load behaviours for required and optional mods
@@ -200,6 +222,7 @@ namespace BlueberryMushroomMachine
 				return;
 			}
 
+			// Add SMAPI console commands
 			this.RegisterConsoleCommands();
 
 			// Load mushroom overlay texture for all filled machines
