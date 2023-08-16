@@ -38,13 +38,21 @@ namespace BlueberryMushroomMachine
 			this.Helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
 		}
 
-		private void LoadApis()
+		private bool TryLoadApis()
 		{
 			// SpaceCore setup
-			ISpaceCoreAPI spacecoreApi = this.Helper.ModRegistry
-				.GetApi<ISpaceCoreAPI>
-				("spacechase0.SpaceCore");
-			spacecoreApi.RegisterSerializerType(typeof(Propagator));
+			try
+			{
+				ISpaceCoreAPI spacecoreApi = this.Helper.ModRegistry
+					.GetApi<ISpaceCoreAPI>
+					("spacechase0.SpaceCore");
+				spacecoreApi.RegisterSerializerType(typeof(Propagator));
+			}
+			catch (Exception e)
+			{
+				Log.E($"Failed to register Propagator objects with SpaceCore.{Environment.NewLine}{e}");
+				return false;
+			}
 
 			// Json Assets setup
 			ModEntry.JsonAssetsAPI = this.Helper.ModRegistry
@@ -154,6 +162,8 @@ namespace BlueberryMushroomMachine
 				ModEntry.CraftingAPI.AddRecipeProvider(provider: new BetterCraftingRecipeProvider());
 				ModEntry.CraftingAPI.AddRecipesToDefaultCategory(cooking: false, categoryId: "machinery", recipeNames: new[] { ModValues.PropagatorInternalName });
 			}
+
+			return true;
 		}
 
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
@@ -183,7 +193,12 @@ namespace BlueberryMushroomMachine
 				Log.E($"Error in printing mod configuration.\n{ex}");
 			}
 
-			this.LoadApis();
+			// Load behaviours for required and optional mods
+			if (!this.TryLoadApis())
+			{
+				Log.E("Failed to load required mods. Mod will not be loaded.");
+				return;
+			}
 
 			this.RegisterConsoleCommands();
 
