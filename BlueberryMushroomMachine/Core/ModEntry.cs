@@ -1,5 +1,5 @@
 using BlueberryMushroomMachine.Editors;
-using GenericModConfigMenu;
+using BlueberryMushroomMachine.Interface;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
