@@ -35,18 +35,7 @@ namespace BlueberryMushroomMachine
 			ModEntry.Instance = this;
 			ModEntry.Config = helper.ReadConfig<Config>();
 
-			this.RegisterConsoleCommands();
-
 			this.Helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
-			this.Helper.Events.GameLoop.DayStarted += this.OnDayStarted;
-			this.Helper.Events.GameLoop.ReturnedToTitle += this.OnTitleScreen;
-
-			// Load mushroom overlay texture for all filled machines
-			ModEntry.MachineTexture = this.Helper.ModContent.Load<Texture2D>(ModValues.MachinePath);
-			ModEntry.OverlayTexture = this.Helper.ModContent.Load<Texture2D>(ModValues.OverlayPath);
-
-			// Harmony setup
-			HarmonyPatches.Apply(uniqueID: this.ModManifest.UniqueID);
 		}
 
 		private void LoadApis()
@@ -57,7 +46,7 @@ namespace BlueberryMushroomMachine
 				("spacechase0.SpaceCore");
 			spacecoreApi.RegisterSerializerType(typeof(Propagator));
 
-			// JA setup
+			// Json Assets setup
 			ModEntry.JsonAssetsAPI = this.Helper.ModRegistry
 				.GetApi<IJsonAssetsAPI>
 				("spacechase0.JsonAssets");
@@ -71,7 +60,7 @@ namespace BlueberryMushroomMachine
 					ModEntry.Config.DebugMode);
 			}
 
-			// GMCM setup
+			// Generic Mod Config Menu setup
 			IGenericModConfigMenuApi gmcm = this.Helper.ModRegistry
 				.GetApi<IGenericModConfigMenuApi>
 				("spacechase0.GenericModConfigMenu");
@@ -196,6 +185,18 @@ namespace BlueberryMushroomMachine
 
 			this.LoadApis();
 
+			this.RegisterConsoleCommands();
+
+			// Load mushroom overlay texture for all filled machines
+			ModEntry.MachineTexture = this.Helper.ModContent.Load<Texture2D>(ModValues.MachinePath);
+			ModEntry.OverlayTexture = this.Helper.ModContent.Load<Texture2D>(ModValues.OverlayPath);
+
+			// Harmony setup
+			HarmonyPatches.Apply(uniqueID: this.ModManifest.UniqueID);
+
+			// Event handlers
+			this.Helper.Events.GameLoop.DayStarted += this.OnDayStarted;
+			this.Helper.Events.GameLoop.ReturnedToTitle += this.OnTitleScreen;
 			this.Helper.Events.Content.AssetRequested += this.OnAssetRequested;
 		}
 
