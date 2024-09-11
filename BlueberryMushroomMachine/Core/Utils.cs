@@ -1,47 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using StardewValley.Locations;
-using StardewValley.Objects;
+using Microsoft.Xna.Framework;
 using StardewValley;
+using StardewValley.Extensions;
+using StardewValley.Locations;
 using static BlueberryMushroomMachine.ModEntry;
 using Object = StardewValley.Object;
-using Microsoft.Xna.Framework;
 
 namespace BlueberryMushroomMachine
 {
 	internal static class Utils
 	{
-		/// <summary>
-		/// Reassigns the unique ID of any mismatched or shuffled held objects.
-		/// </summary>
-		public static void FixPropagatorObjectIds()
-		{
-			try
-			{
-				Utility.ForAllLocations((GameLocation location) =>
-				{
-					foreach (Propagator propagator in Utils.GetMachinesIn(location))
-					{
-						if (propagator.SourceMushroomName is not null
-							&& ModEntry.JsonAssetsAPI.GetObjectId(name: propagator.SourceMushroomName) is int id
-							&& id > 0 && id != propagator.SourceMushroomIndex)
-						{
-							Log.D($"Updating mushroom ID for mushroom propagator located at" +
-								$" {location.NameOrUniqueName}::{propagator.TileLocation}:" +
-								$" {propagator.SourceMushroomName} {propagator.SourceMushroomIndex} => {id}",
-								ModEntry.Config.DebugMode);
-							propagator.SourceMushroomIndex = id;
-						}
-					}
-				});
-			}
-			catch (Exception e)
-			{
-				Log.E($"Error while deshuffling held mushrooms\n\n{e}");
-			}
-		}
-
 		/// <summary>
 		/// Fetches all propagator machines in a given location.
 		/// </summary>
@@ -75,24 +45,20 @@ namespace BlueberryMushroomMachine
 		/// Undefined mushrooms will use their default object rectangle.
 		/// </summary>
 		/// <returns>Source rectangle for mushroom overlay from overlay texture.</returns>
-		public static Rectangle GetOverlaySourceRect(GameLocation location, int index, int whichFrame)
+		public static Rectangle GetOverlaySourceRect(GameLocation location, string itemId, int whichFrame)
 		{
 			int frames = ModValues.OverlayMushroomFrames;
-			bool isBasicMushroom = Enum.IsDefined(enumType: typeof(Mushrooms), value: index);
+			bool isBasicMushroom = ModEntry.Data.Mushrooms.ContainsKey(itemId);
 			Point size = isBasicMushroom
 				? Propagator.OverlaySize
 				: new Point(x: Game1.smallestTileSize, y: Game1.smallestTileSize);
 			return isBasicMushroom
 				? new Rectangle(
 					x: (Utils.IsDarkLocation(location) ? size.X * frames : 0) + whichFrame * size.X,
-					y: GetMushroomSourceRectIndex(index: index) * size.Y,
+					y: GetMushroomSourceRectIndex(itemId: itemId) * size.Y,
 					width: size.X,
 					height: size.Y)
-				: Game1.getSourceRectForStandardTileSheet(
-					tileSheet: Game1.objectSpriteSheet,
-					tilePosition: index,
-					width: size.X,
-					height: size.Y);
+				: ItemRegistry.GetDataOrErrorItem(itemId).GetSourceRect();
 		}
 
 		/// <summary>
@@ -137,56 +103,35 @@ namespace BlueberryMushroomMachine
 		{
 			// From the vanilla Utility.IsPerfectlyNormalObjectAtParentSheetIndex or whatever that method was again
 			// Don't want to start growing wallpaper
-			Type type = o.GetType();
-			if (o is null || (type != typeof(Object) && type != typeof(ColoredObject)))
-			{
+			if (o is null || !o.HasTypeObject())
 				return false;
-			}
 
-			return Enum.IsDefined(enumType: typeof(Mushrooms), value: o.ParentSheetIndex)
-				|| ModEntry.Config.OtherObjectsThatCanBeGrown.Contains(o.Name)
+			return ModEntry.Data.Mushrooms.ContainsKey(o.ItemId)
+				|| ModEntry.Config.OtherObjectsThatCanBeGrown.Contains(o.ItemId)
 				|| ((o.Category == Object.VegetableCategory || o.Category == Object.GreensCategory)
-					&& (o.Name.Contains("mushroom", StringComparison.InvariantCultureIgnoreCase)
-						|| o.Name.Contains("fungus", StringComparison.InvariantCultureIgnoreCase)));
+					&& (o.ItemId.Contains("mushroom", StringComparison.InvariantCultureIgnoreCase)
+						|| o.ItemId.Contains("fungus", StringComparison.InvariantCultureIgnoreCase)));
 		}
 
-		public static int GetMushroomSourceRectIndex(int index)
+		public static int GetMushroomSourceRectIndex(string itemId)
 		{
-			return index switch
-			{
-				(int)Mushrooms.Morel => 2,
-				(int)Mushrooms.Chantarelle => 1,
-				(int)Mushrooms.Common => 0,
-				(int)Mushrooms.Red => 3,
-				(int)Mushrooms.Purple => 4,
-				_ => -1
-			};
+			return ModEntry.Data.Mushrooms.TryGetValue(itemId, out MushroomData entry)
+				? entry.SourceRectIndex
+				: -1;
 		}
 
 		public static void GetMushroomGrowthRate(Object o, out float rate)
 		{
-			rate = o.ParentSheetIndex switch
-			{
-				(int)Mushrooms.Morel => 0.5f,
-				(int)Mushrooms.Chantarelle => 0.5f,
-				(int)Mushrooms.Common => 1.0f,
-				(int)Mushrooms.Red => 0.5f,
-				(int)Mushrooms.Purple => 0.25f,
-				_ => o.Price < 50 ? 1.0f : o.Price < 100 ? 0.75f : o.Price < 200 ? 0.5f : 0.25f
-			};
+			rate = ModEntry.Data.Mushrooms.TryGetValue(o.ItemId, out MushroomData entry)
+				? entry.GrowthRate
+				: ModEntry.Data.MushroomGrowthRatePerPrice.FirstOrDefault(pair => pair.Key < o.Price).Value;
 		}
 
 		public static void GetMushroomMaximumQuantity(Object o, out int quantity)
 		{
-			quantity = o.ParentSheetIndex switch
-			{
-				(int)Mushrooms.Morel => 4,
-				(int)Mushrooms.Chantarelle => 4,
-				(int)Mushrooms.Common => 6,
-				(int)Mushrooms.Red => 3,
-				(int)Mushrooms.Purple => 2,
-				_ => o.Price < 50 ? 5 : o.Price < 100 ? 4 : o.Price < 200 ? 3 : 2
-			};
+			quantity = ModEntry.Data.Mushrooms.TryGetValue(o.ItemId, out MushroomData entry)
+				? entry.MaximumQuantity
+				: ModEntry.Data.MushroomMaximumQuantityPerPrice.FirstOrDefault(pair => pair.Key < o.Price).Value;
 			quantity *= ModEntry.Config.MaximumQuantityLimitsDoubled ? 2 : 1;
 		}
 	}

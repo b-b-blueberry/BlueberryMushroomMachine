@@ -12,7 +12,17 @@ namespace BlueberryMushroomMachine
 		public static readonly string PropagatorInternalName
 			= $"{PackageName}.Propagator";
 
+		// Assets
+		public static readonly string GameContentDataPath
+			= Path.Combine("Mods", $"{ModValues.AuthorName}.{ModValues.PackageName}.Assets", "Data");
+		public static readonly string GameContentMachinePath
+			= Path.Combine("Mods", $"{ModValues.AuthorName}.{ModValues.PackageName}.Assets", "Machine");
+		public static readonly string GameContentOverlayPath
+			= Path.Combine("Mods", $"{ModValues.AuthorName}.{ModValues.PackageName}.Assets", "Overlay");
+
 		// Files
+		public static readonly string DataPath
+			= Path.Combine("assets", "data.json");
 		public static readonly string MachinePath
 			= Path.Combine("assets", "propagator.png");
 		public static readonly string OverlayPath
@@ -34,11 +44,8 @@ namespace BlueberryMushroomMachine
 
 		// Objects
 		public const int OverlayMushroomFrames = 4;
-		public const string ObjectDataFormat = "{0}/0/-300/Crafting -9/{1}/true/true/0";
 		public const string RecipeDataFormat = "388 20 709 1/Home/{0}/true/null";
 
-		public static int PropagatorIndex { get; set; } = 0;
-		public static string ObjectData { get; set; } = null;
 		public static string RecipeData { get; set; } = null;
 
 		// Events

@@ -2,7 +2,6 @@
 using Pathoschild.Stardew.Automate;
 using StardewValley;
 using StardewValley.Buildings;
-using StardewValley.Locations;
 using StardewValley.TerrainFeatures;
 
 namespace BlueberryMushroomAutomation
@@ -21,7 +20,7 @@ namespace BlueberryMushroomAutomation
 			return null;
 		}
 
-		public IAutomatable GetFor(Building building, BuildableGameLocation location, in Vector2 tile)
+		public IAutomatable GetFor(Building building, GameLocation location, in Vector2 tile)
 		{
 			return null;
 		}

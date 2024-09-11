@@ -1,24 +1,30 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using BlueberryMushroomMachine.Editors;
 using BlueberryMushroomMachine.Interface;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using System;
-using System.Linq;
-using System.Reflection;
 
 namespace BlueberryMushroomMachine
 {
 	public sealed class ModEntry : Mod
 	{
-		public enum Mushrooms
+		public class ModData
 		{
-			Morel = 257,
-			Chantarelle = 281,
-			Common = 404,
-			Red = 420,
-			Purple = 422
+			public Dictionary<string, MushroomData> Mushrooms;
+			public Dictionary<int, float> MushroomGrowthRatePerPrice;
+			public Dictionary<int, int> MushroomMaximumQuantityPerPrice;
+		}
+
+		public class MushroomData
+		{
+			public int SourceRectIndex;
+			public float GrowthRate;
+			public int MaximumQuantity;
 		}
 
 		public static ModEntry Instance { get; private set; }
@@ -26,9 +32,7 @@ namespace BlueberryMushroomMachine
 		public static ITranslationHelper I18n => ModEntry.Instance.Helper.Translation;
 		public static Texture2D MachineTexture { get; private set; }
 		public static Texture2D OverlayTexture { get; private set; }
-
-		internal static IJsonAssetsAPI JsonAssetsAPI;
-		internal static IBetterCrafting CraftingAPI;
+		public static ModData Data { get; private set; }
 
 		public override void Entry(IModHelper helper)
 		{
@@ -47,32 +51,12 @@ namespace BlueberryMushroomMachine
 					.GetApi<ISpaceCoreAPI>
 					("spacechase0.SpaceCore");
 				spacecoreApi.RegisterSerializerType(typeof(Propagator));
+				ItemRegistry.AddTypeDefinition(new PropagatorItemDataDefinition());
 			}
 			catch (Exception e)
 			{
 				Log.E($"Failed to register Propagator objects with SpaceCore.{Environment.NewLine}{e}");
 				return false;
-			}
-
-			// Json Assets setup
-			try
-			{
-				ModEntry.JsonAssetsAPI = this.Helper.ModRegistry
-					.GetApi<IJsonAssetsAPI>
-					("spacechase0.JsonAssets");
-				if (ModEntry.JsonAssetsAPI is not null)
-				{
-					ModEntry.JsonAssetsAPI.IdsFixed += (object sender, EventArgs e) => Utils.FixPropagatorObjectIds();
-				}
-				else
-				{
-					Log.D($"Json Assets not found, deshuffling will not happen",
-						ModEntry.Config.DebugMode);
-				}
-			}
-			catch (Exception e)
-			{
-				Log.E($"Failed to add Json Assets behaviours.{Environment.NewLine}{e}");
 			}
 
 			// Generic Mod Config Menu setup
@@ -169,21 +153,6 @@ namespace BlueberryMushroomMachine
 				Log.E($"Failed to add Generic Mod Config Menu behaviours.{Environment.NewLine}{e}");
 			}
 
-			// Better Crafting setup
-			try
-			{
-				ModEntry.CraftingAPI = this.Helper.ModRegistry.GetApi<IBetterCrafting>("leclair.bettercrafting");
-				if (ModEntry.CraftingAPI is not null)
-				{
-					ModEntry.CraftingAPI.AddRecipeProvider(provider: new BetterCraftingRecipeProvider());
-					ModEntry.CraftingAPI.AddRecipesToDefaultCategory(cooking: false, categoryId: "machinery", recipeNames: new[] { ModValues.PropagatorInternalName });
-				}
-			}
-			catch (Exception e)
-			{
-				Log.E($"Failed to add Better Crafting behaviours.{Environment.NewLine}{e}");
-			}
-
 			return true;
 		}
 
@@ -225,32 +194,34 @@ namespace BlueberryMushroomMachine
 			// Add SMAPI console commands
 			this.RegisterConsoleCommands();
 
-			// Load mushroom overlay texture for all filled machines
-			ModEntry.MachineTexture = this.Helper.ModContent.Load<Texture2D>(ModValues.MachinePath);
-			ModEntry.OverlayTexture = this.Helper.ModContent.Load<Texture2D>(ModValues.OverlayPath);
-
-			// Harmony setup
-			HarmonyPatches.Apply(uniqueID: this.ModManifest.UniqueID);
-
 			// Event handlers
 			this.Helper.Events.GameLoop.DayStarted += this.OnDayStarted;
 			this.Helper.Events.GameLoop.ReturnedToTitle += this.OnTitleScreen;
 			this.Helper.Events.Content.AssetRequested += this.OnAssetRequested;
+
+			// Load mushroom overlay texture for all filled machines
+			ModEntry.Data = Game1.content.Load<ModData>(ModValues.GameContentDataPath);
+			ModEntry.MachineTexture = Game1.content.Load<Texture2D>(ModValues.GameContentMachinePath);
+			ModEntry.OverlayTexture = Game1.content.Load<Texture2D>(ModValues.GameContentOverlayPath);
 		}
 
 		private void OnAssetRequested(object sender, AssetRequestedEventArgs e)
 		{
+			// Handle mod assets
+			if (e.NameWithoutLocale.IsEquivalentTo(ModValues.GameContentDataPath))
+				e.LoadFromModFile<ModData>(relativePath: ModValues.DataPath, priority: AssetLoadPriority.Exclusive);
+			else if (e.NameWithoutLocale.IsEquivalentTo(ModValues.GameContentMachinePath))
+				e.LoadFromModFile<Texture2D>(relativePath: ModValues.MachinePath, priority: AssetLoadPriority.Exclusive);
+			else if (e.NameWithoutLocale.IsEquivalentTo(ModValues.GameContentOverlayPath))
+				e.LoadFromModFile<Texture2D>(relativePath: ModValues.OverlayPath, priority: AssetLoadPriority.Exclusive);
+
 			// Handle asset requests
-			_ = BigCraftablesInfoEditor.ApplyEdit(e)
-				|| CraftingRecipesEditor.ApplyEdit(e)
-				|| EventsEditor.ApplyEdit(e);
+			_ = CraftingRecipesEditor.ApplyEdit(e) || EventsEditor.ApplyEdit(e);
 		}
 
 		private void OnTitleScreen(object sender, ReturnedToTitleEventArgs e)
 		{
 			// Reset data values
-			ModValues.PropagatorIndex = 0;
-			ModValues.ObjectData = null;
 			ModValues.RecipeData = null;
 		}
 
@@ -270,7 +241,7 @@ namespace BlueberryMushroomMachine
 				Game1.player.craftingRecipes.Add(ModValues.PropagatorInternalName, 0);
 			}
 			else if (!ModEntry.Config.RecipeAlwaysAvailable
-				&& !Game1.player.eventsSeen.Contains(ModValues.EventId)
+				&& !Game1.player.eventsSeen.Contains(ModValues.EventId.ToString())
 				&& Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorInternalName))
 			{
 				// Remove the Propagator crafting recipe if cheat is disabled and player has not seen the requisite event
@@ -280,23 +251,6 @@ namespace BlueberryMushroomMachine
 
 		private void RegisterConsoleCommands()
 		{
-			// Commands usable by all players
-
-			this.Helper.ConsoleCommands.Add(
-				name: ModValues.GiveConsoleCommand,
-				documentation: "Add one (or a given number of) mushroom propagator(s) to your inventory.",
-				callback: (string cmd, string[] args) =>
-				{
-					// Debug spawning for Propagator: Can't be spawned in with CJB Item Spawner as it subclasses Object
-					Propagator propagator = new(tileLocation: Game1.player.getTileLocation())
-					{
-						Stack = args.Length > 0 && int.TryParse(args[0], out int stack) ? stack : 1
-					};
-					Game1.player.addItemByMenuIfNecessary(item: propagator);
-					Log.D($"{Game1.player.Name} spawned in a"
-						  + $" [{ModValues.PropagatorIndex}] {ModValues.PropagatorInternalName} ({propagator.DisplayName}).");
-				});
-
 			// Commands usable when debugging
 
 			if (ModEntry.Config.DebugMode)
@@ -308,8 +262,7 @@ namespace BlueberryMushroomMachine
 					{
 						foreach (Propagator propagator in Utils.GetMachinesIn(Game1.currentLocation))
 						{
-							Log.D($"Grow (item: [{propagator.SourceMushroomIndex}]" +
-								$" {propagator.SourceMushroomName ?? "N/A"}x{propagator.heldObject?.Value?.Stack ?? 0}" +
+							Log.D($"Grow (item: [{propagator.SourceMushroomItemId}x{propagator.heldObject?.Value?.Stack ?? 0}]" +
 								$" Q{propagator.SourceMushroomQuality}" +
 								$" ({propagator.Growth}/{Propagator.DefaultDaysToGrow} days +{propagator.GrowthRatePerDay})" +
 								$" at {Game1.currentLocation.Name} {propagator.TileLocation}",
@@ -327,19 +280,13 @@ namespace BlueberryMushroomMachine
 						// TODO: DEBUG: 
 						foreach (Propagator propagator in Utils.GetMachinesIn(Game1.currentLocation))
 						{
-							Log.D($"Status (item: [{propagator.SourceMushroomIndex}]" +
-								$" {propagator.SourceMushroomName ?? "N/A"}x{propagator.heldObject?.Value?.Stack ?? 0}" +
+							Log.D($"Status (item: [{propagator.SourceMushroomItemId}x{propagator.heldObject?.Value?.Stack ?? 0}]" +
 								$" Q{propagator.SourceMushroomQuality}" +
 								$" ({propagator.Growth}/{Propagator.DefaultDaysToGrow} days +{propagator.GrowthRatePerDay})" +
 								$" at {Game1.currentLocation.Name} {propagator.TileLocation}",
 								ModEntry.Config.DebugMode);
 						}
 					});
-
-				this.Helper.ConsoleCommands.Add(
-					name: ModValues.FixIdsConsoleCommand,
-					documentation: "DEBUG: Manually fix IDs of objects held by mushroom propagators.",
-					callback: (string cmd, string[] args) => Utils.FixPropagatorObjectIds());
 			}
 		}
 	}

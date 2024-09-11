@@ -5,7 +5,7 @@
     "Description": "Mushroom Propagator compatibility with Automate.",
     "UniqueID": "blueberry.BlueberryMushroomAutomation",
     "EntryDll": "BlueberryMushroomAutomation.dll",
-    "MinimumApiVersion": "3.0.0",
+    "MinimumApiVersion": "4.0.0-alpha.0",
     "Dependencies": [
         {
             "UniqueID": "blueberry.MushroomPropagator"

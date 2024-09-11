@@ -1,9 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using System.Xml.Serialization;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using StardewValley.Locations;
-using System;
-using System.Xml.Serialization;
 using Object = StardewValley.Object;
 
 namespace BlueberryMushroomMachine
@@ -11,18 +11,18 @@ namespace BlueberryMushroomMachine
 	[XmlType("Mods_BlueberryMushroomMachine")]
 	public class Propagator : Object
 	{
+		/// <summary>
+		/// Overrides <see cref="StardewValley.Objects.IndoorPot.TypeDefinitionId"/> to use custom qualifier.
+		/// </summary>
+		public override string TypeDefinitionId => PropagatorItemDataDefinition.TypeDefinitionId;
+
 		// Source mushroom (placed by player)
 
-		/// <summary>
-		/// Name of root mushroom used as a template for the grown held object.
-		/// Used for persistent custom objects in SDV 1.5.
-		/// </summary>
-		public string SourceMushroomName;
 		/// <summary>
 		/// Unique ID of root mushroom used as a template for the grown held object.
 		/// Used for persistent base game objects in SDV 1.5.
 		/// </summary>
-		public int SourceMushroomIndex;
+		public string SourceMushroomItemId;
 		/// <summary>
 		/// Quality of root mushroom used as a template for the grown held object.
 		/// All grown objects will copy the quality of the source mushroom.
@@ -84,14 +84,25 @@ namespace BlueberryMushroomMachine
 			currentTime: Game1.timeOfDay,
 			daysElapsed: this.DaysToReady - 1);
 
-		public Propagator() : this(tileLocation: Vector2.Zero)
-		{
-		}
+		public Propagator() : this(tile: Vector2.Zero) {}
 
-		public Propagator(Vector2 tileLocation)
+		public Propagator(Vector2 tile)
 		{
-			this.TileLocation = tileLocation;
-			this.Initialise();
+			// Item
+			this.ItemId = ModValues.PropagatorInternalName;
+
+			// Object
+			this.Name = ModValues.PropagatorInternalName;
+			this.TileLocation = tile;
+			this.IsRecipe = false;
+			this.bigCraftable.Value = true;
+			this.CanBeSetDown = true;
+			this.setOutdoors.Value = true;
+			this.setIndoors.Value = true;
+			this.Type = "Crafting";
+			this.Category = Propagator.BigCraftableCategory;
+			this.Fragility = Propagator.fragility_Removable;
+			this.Edibility = Propagator.inedible;
 		}
 
 		protected override string loadDisplayName()
@@ -102,47 +113,6 @@ namespace BlueberryMushroomMachine
 		public override string getDescription()
 		{
 			return Propagator.PropagatorDescription;
-		}
-
-		/// <summary>
-		/// Assigns members based on definition given in <see cref="Game1.bigCraftablesInformation"/> from <see cref="ModValues.ObjectData"/>.
-		/// </summary>
-		private void Initialise()
-		{
-			// Basic properties
-			this.Name = ModValues.PropagatorInternalName;
-			this.ParentSheetIndex = ModValues.PropagatorIndex;
-			this.DisplayName = this.loadDisplayName();
-
-			// Craftable properties
-			this.CanBeSetDown = true;
-			this.bigCraftable.Value = true;
-			this.boundingBox.Value = new Rectangle(
-				location: (this.TileLocation * Game1.tileSize).ToPoint(),
-				size: new Point(Game1.tileSize));
-
-			// Object properties from data values
-			if (ModValues.ObjectData is null)
-			{
-				// Ignore setup if data values not defined,
-				// e.g. objects populated for save on main menu
-				return;
-			}
-
-			string[] fields = ModValues.ObjectData.Split('/');
-			this.Price = Convert.ToInt32(fields[1]);
-			this.Edibility = Convert.ToInt32(fields[2]);
-			string[] typeAndCategory = fields[3].Split(' ');
-			this.Type = typeAndCategory[0];
-			if (typeAndCategory.Length > 1)
-			{
-				this.Category = Convert.ToInt32(typeAndCategory[1]);
-			}
-			this.setOutdoors.Value = Convert.ToBoolean(fields[5]);
-			this.setIndoors.Value = Convert.ToBoolean(fields[6]);
-			this.Fragility = Convert.ToInt32(fields[7]);
-			this.isLamp.Value = fields.Length > 8 && Convert.ToBoolean(fields[8]);
-			this.initializeLightSource(tileLocation: this.TileLocation);
 		}
 
 		/// <summary>
@@ -157,8 +127,7 @@ namespace BlueberryMushroomMachine
 			Utils.GetMushroomGrowthRate(o: dropIn, rate: out this.GrowthRatePerDay);
 			Utils.GetMushroomMaximumQuantity(o: dropIn, quantity: out this.MaximumStack);
 
-			this.SourceMushroomName = dropIn.Name;
-			this.SourceMushroomIndex = dropIn.ParentSheetIndex;
+			this.SourceMushroomItemId = dropIn.ItemId;
 			this.SourceMushroomQuality = dropIn.Quality;
 			this.Growth = 0;
 			this.MinutesUntilReady = this.PropagatorWorkingMinutes;
@@ -172,7 +141,7 @@ namespace BlueberryMushroomMachine
 		/// </param>
 		public void SetHeldObject(float daysToMature)
 		{
-			this.heldObject.Value = new Object(parentSheetIndex: this.SourceMushroomIndex, initialStack: 1);
+			this.heldObject.Value = ItemRegistry.Create<Object>(itemId: this.SourceMushroomItemId);
 			this.Growth = daysToMature;
 			this.readyForHarvest.Value = false;
 			this.MinutesUntilReady = this.PropagatorWorkingMinutes;
@@ -185,7 +154,7 @@ namespace BlueberryMushroomMachine
 
 		public bool PopByTool()
 		{
-			if (this.SourceMushroomIndex > 0)
+			if (this.SourceMushroomItemId is not null)
 			{
 				// Extract any held mushrooms from machine
 				this.PopHeldOrSourceObject(isSourceForcedOut: true);
@@ -220,12 +189,7 @@ namespace BlueberryMushroomMachine
 			int popQuality = Game1.player.professions.Contains(Farmer.botanist)
 				? Object.bestQuality
 				: this.SourceMushroomQuality;
-			Object popObject = new(
-				parentSheetIndex: this.SourceMushroomIndex,
-				initialStack: 1,
-				isRecipe: false,
-				price: -1,
-				quality: popQuality);
+			Object popObject = ItemRegistry.Create<Object>(itemId: this.SourceMushroomItemId, quality: popQuality);
 
 			// Create mushroom item drops in the world from the machine
 			if (!giveNothing)
@@ -234,7 +198,7 @@ namespace BlueberryMushroomMachine
 				{
 					Game1.createItemDebris(
 						item: popObject.getOne(),
-						origin: (this.TileLocation + new Vector2(0.5f)) * Game1.tileSize,
+						pixelOrigin: (this.TileLocation + new Vector2(0.5f)) * Game1.tileSize,
 						direction: -1);
 				}
 			}
@@ -270,20 +234,16 @@ namespace BlueberryMushroomMachine
 			}
 
 			// Pop the source mushroom, resetting the machine to default
-			if (isPoppingSource && this.SourceMushroomIndex > 0)
+			if (isPoppingSource && this.SourceMushroomItemId is not null)
 			{
 				Game1.playSound("harvest");
 				isPopped = true;
-				Object o = new (parentSheetIndex: this.SourceMushroomIndex, initialStack: 1)
-				{
-					Quality = this.SourceMushroomQuality
-				};
+				Object o = ItemRegistry.Create<Object>(itemId: this.SourceMushroomItemId, quality: this.SourceMushroomQuality);
 				Game1.createItemDebris(
 					item: o,
-					origin: (this.TileLocation + new Vector2(value: 0.5f)) * Game1.tileSize, direction: -1);
+					pixelOrigin: (this.TileLocation + new Vector2(value: 0.5f)) * Game1.tileSize, direction: -1);
 				this.MaximumStack = 1;
-				this.SourceMushroomName = null;
-				this.SourceMushroomIndex = 0;
+				this.SourceMushroomItemId = null;
 				this.SourceMushroomQuality = 0;
 				this.MinutesUntilReady = -1;
 			}
@@ -300,7 +260,7 @@ namespace BlueberryMushroomMachine
 			Vector2 propagatorPosition = this.boundingBox.Center.ToVector2();
 			Vector2 key = Vector2.Floor(toolPosition / Game1.tileSize);
 			Game1.currentLocation.debris.Add(new Debris(
-				item: new Propagator(tileLocation: this.TileLocation),
+				item: new Propagator(tile: this.TileLocation),
 				debrisOrigin: toolPosition,
 				targetLocation: propagatorPosition));
 			Game1.currentLocation.Objects.Remove(key);
@@ -309,7 +269,7 @@ namespace BlueberryMushroomMachine
 		/// <summary>
 		/// Perform all start-of-day checks for the Propagator to handle held object events.
 		/// </summary>
-		public override void DayUpdate(GameLocation location)
+		public override void DayUpdate()
 		{
 			// Grow mushrooms overnight
 			this.GrowHeldObject();
@@ -320,7 +280,7 @@ namespace BlueberryMushroomMachine
 		/// </summary>
 		public void GrowHeldObject()
 		{
-			if (this.SourceMushroomIndex <= 0)
+			if (this.SourceMushroomItemId is null)
 			{
 				return;
 			}
@@ -371,7 +331,7 @@ namespace BlueberryMushroomMachine
 		/// </returns>
 		public override bool checkForAction(Farmer who, bool justCheckingForActivity = false)
 		{
-			Point tile = new(x: who.getTileX(), y: who.getTileY());
+			Point tile = who.TilePoint;
 			if (!justCheckingForActivity && who is not null
 					&& who.currentLocation.isObjectAtTile(tile.X, tile.Y - 1)
 					&& who.currentLocation.isObjectAtTile(tile.X, tile.Y + 1)
@@ -382,7 +342,7 @@ namespace BlueberryMushroomMachine
 					&& !who.currentLocation.getObjectAtTile(tile.X - 1, tile.Y).isPassable()
 					&& !who.currentLocation.getObjectAtTile(tile.X + 1, tile.Y).isPassable())
 			{
-				this.performToolAction(t: null, location: who.currentLocation);
+				this.performToolAction(t: null);
 			}
 
 			return justCheckingForActivity || base.checkForAction(who: who, justCheckingForActivity: justCheckingForActivity);
@@ -408,17 +368,18 @@ namespace BlueberryMushroomMachine
 		/// <returns>
 		/// Whether or not to continue with base behaviour.
 		/// </returns>
-		public override bool performToolAction(Tool t, GameLocation location)
+		public override bool performToolAction(Tool t)
 		{
 			// Ignore usages that wouldn't trigger actions for other machines
 			if (t is null || !t.isHeavyHitter() || t is StardewValley.Tools.MeleeWeapon)
 			{
-				return base.performToolAction(t, location);
+				return base.performToolAction(t);
 			}
 
-			location.playSound("woodWhack");
+			this.Location.playSound("woodWhack");
 			return this.PopByTool();
 		}
+
 
 		/// <summary>
 		/// Overrides usual use-with-item behaviours to limit the set to working in
@@ -436,16 +397,16 @@ namespace BlueberryMushroomMachine
 		/// <returns>
 		/// Whether the dropIn object is appropriate for this machine in this context.
 		/// </returns>
-		public override bool performObjectDropInAction(Item dropIn, bool probe, Farmer who)
+		public override bool performObjectDropInAction(Item dropInItem, bool probe, Farmer who, bool returnFalseIfItemConsumed = false)
 		{
 			// Ignore usages with inappropriate items
-			if (dropIn is null)
+			if (dropInItem is null)
 			{
 				return false;
 			}
 
 			// Ignore Truffles
-			if (Utility.IsNormalObjectAtParentSheetIndex(dropIn, 430))
+			if (Utility.IsNormalObjectAtParentSheetIndex(item: dropInItem, itemId: "430"))
 			{
 				if (!probe)
 				{
@@ -455,7 +416,7 @@ namespace BlueberryMushroomMachine
 			}
 
 			// Ignore things that are not mushrooms
-			if (dropIn is not Object obj || obj.bigCraftable.Value || !Utils.IsValidMushroom(o: obj))
+			if (dropInItem is not Object obj || obj.bigCraftable.Value || !Utils.IsValidMushroom(o: obj))
 			{
 				return false;
 			}
@@ -465,7 +426,7 @@ namespace BlueberryMushroomMachine
 			{
 				if (!((who.currentLocation is Cellar && ModEntry.Config.WorksInCellar)
 					|| (who.currentLocation is FarmCave or IslandFarmCave && ModEntry.Config.WorksInFarmCave)
-					|| (who.currentLocation is BuildableGameLocation && ModEntry.Config.WorksInBuildings)
+					|| (who.currentLocation.parentLocationName is not null && ModEntry.Config.WorksInBuildings)
 					|| (who.currentLocation is FarmHouse && ModEntry.Config.WorksInFarmHouse)
 					|| (who.currentLocation.IsGreenhouse && ModEntry.Config.WorksInGreenhouse)
 					|| (who.currentLocation.IsOutdoors && ModEntry.Config.WorksOutdoors)))
@@ -486,7 +447,7 @@ namespace BlueberryMushroomMachine
 			}
 
 			// Extract held mushrooms prematurely
-			if (this.SourceMushroomIndex > 0)
+			if (this.SourceMushroomItemId is not null)
 			{
 				if (this.heldObject.Value is not null)
 				{
@@ -501,7 +462,7 @@ namespace BlueberryMushroomMachine
 			}
 
 			// Set dropIn object as source mushroom
-			if (this.SourceMushroomIndex <= 0)
+			if (this.SourceMushroomItemId is null)
 			{
 				this.SetSourceObject(dropIn: obj);
 				who?.currentLocation.playSound("Ship");
@@ -537,7 +498,7 @@ namespace BlueberryMushroomMachine
 					{
 						Game1.createItemDebris(
 							item: location.objects[tile],
-							origin: tile * Game1.tileSize, direction: -1);
+							pixelOrigin: tile * Game1.tileSize, direction: -1);
 						location.objects[tile] = propagator;
 					}
 				}
@@ -585,14 +546,14 @@ namespace BlueberryMushroomMachine
 				source: source,
 				isFlipped: isFlipped);
 
-			// End here if no mushrooms are held
-			if (this.SourceMushroomIndex < 1)
+			// End here if no source mushroom is set
+			if (this.SourceMushroomItemId is null)
 			{
 				return;
 			}
 
 			// Draw the held object overlay
-			bool isBasicMushroom = Enum.IsDefined(enumType: typeof(ModEntry.Mushrooms), value: this.SourceMushroomIndex);
+			bool isBasicMushroom = ModEntry.Data.Mushrooms.ContainsKey(this.SourceMushroomItemId);
 			int whichFrame = Utils.GetOverlayGrowthFrame(
 				currentDays: this.Growth,
 				goalDays: Propagator.DefaultDaysToGrow,
@@ -607,7 +568,7 @@ namespace BlueberryMushroomMachine
 				destination.Size = scaleSizeToPulse(size: Propagator.OverlaySize, pulse: pulse);
 				source = Utils.GetOverlaySourceRect(
 					location: Game1.currentLocation,
-					index: this.SourceMushroomIndex,
+					itemId: this.SourceMushroomItemId,
 					whichFrame: whichFrame);
 			}
 			else
@@ -699,7 +660,7 @@ namespace BlueberryMushroomMachine
 			Rectangle destination = new(
 				location: objectPosition.ToPoint(),
 				size: (Propagator.MachineSize.ToVector2() * Game1.pixelZoom).ToPoint());
-			float layerDepth = Math.Max(0f, (f.getStandingY() + 3f) / 10000f);
+			float layerDepth = Math.Max(0f, (f.StandingPixel.Y + 3f) / 10000f);
 			Propagator.DrawMachine(
 				spriteBatch: spriteBatch,
 				destination: destination,
@@ -771,9 +732,26 @@ namespace BlueberryMushroomMachine
 			}
 		}
 
-		public override Item getOne()
+		protected override Item GetOneNew()
 		{
-			return new Propagator(tileLocation: Vector2.Zero);
+			return new Propagator(tile: Vector2.Zero);
+		}
+
+		protected override void GetOneCopyFrom(Item source)
+		{
+			base.GetOneCopyFrom(source);
+
+			if (source is Propagator p)
+			{
+				// Source mushroom
+				this.SourceMushroomItemId = p.SourceMushroomItemId;
+				this.SourceMushroomQuality = p.SourceMushroomQuality;
+
+				// Extra mushrooms
+				this.GrowthRatePerDay = p.GrowthRatePerDay;
+				this.Growth = p.Growth;
+				this.MaximumStack = p.MaximumStack;
+			}
 		}
 
 		protected static void DrawMachine(SpriteBatch spriteBatch, Rectangle destination, Vector2 origin, Color color, float alpha, float layerDepth, Rectangle? source = null, bool isFlipped = false)

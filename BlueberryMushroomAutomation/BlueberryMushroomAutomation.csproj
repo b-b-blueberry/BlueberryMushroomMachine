@@ -4,7 +4,7 @@
     <RootNamespace>BlueberryMushroomAutomation</RootNamespace>
     <Version>2.2.0</Version>
     <EnableHarmony>true</EnableHarmony>
-	<TargetFramework>net5.0</TargetFramework>
+	<TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.2.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <Reference Include="Automate">
-      <HintPath>$(GamePath)\Mods\[CORE]\Automate\Automate.dll</HintPath>
+      <HintPath>$(GamePath)\Mods\Automate\Automate.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
