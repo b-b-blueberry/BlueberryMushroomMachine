@@ -668,7 +668,7 @@ namespace BlueberryMushroomMachine
 				color: Color.White,
 				alpha: 1f,
 				layerDepth: layerDepth,
-				source: Utils.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation));
+				source: Utils.GetMachineSourceRect(location: Game1.currentLocation, tile: Vector2.Zero));
 		}
 
 		public override void drawInMenu(SpriteBatch spriteBatch, Vector2 location, float scaleSize, float transparency, float layerDepth, StackDrawType drawStackNumber, Color color, bool drawShadow)
