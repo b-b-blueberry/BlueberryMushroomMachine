@@ -15,9 +15,17 @@ namespace BlueberryMushroomMachine
 	{
 		public class ModData
 		{
+			// Objects
+			public int OverlayMushroomFrames;
+			public string RecipeFormat;
+
+			// Mushrooms
 			public Dictionary<string, MushroomData> Mushrooms;
 			public Dictionary<int, float> MushroomGrowthRatePerPrice;
 			public Dictionary<int, int> MushroomMaximumQuantityPerPrice;
+
+			// Events
+			public int EventId;
 		}
 
 		public class MushroomData
@@ -196,7 +204,6 @@ namespace BlueberryMushroomMachine
 
 			// Event handlers
 			this.Helper.Events.GameLoop.DayStarted += this.OnDayStarted;
-			this.Helper.Events.GameLoop.ReturnedToTitle += this.OnTitleScreen;
 			this.Helper.Events.Content.AssetRequested += this.OnAssetRequested;
 
 			// Load mushroom overlay texture for all filled machines
@@ -219,12 +226,6 @@ namespace BlueberryMushroomMachine
 			_ = CraftingRecipesEditor.ApplyEdit(e) || EventsEditor.ApplyEdit(e);
 		}
 
-		private void OnTitleScreen(object sender, ReturnedToTitleEventArgs e)
-		{
-			// Reset data values
-			ModValues.RecipeData = null;
-		}
-
 		private void OnDayStarted(object sender, DayStartedEventArgs e)
 		{
 			// Add Robin's pre-Demetrius-event dialogue
@@ -235,17 +236,17 @@ namespace BlueberryMushroomMachine
 
 			// Update player recipes
 			if (ModEntry.Config.RecipeAlwaysAvailable
-				&& !Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorInternalName))
+				&& !Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorItemId))
 			{
 				// Add the Propagator crafting recipe if the cheat is enabled
-				Game1.player.craftingRecipes.Add(ModValues.PropagatorInternalName, 0);
+				Game1.player.craftingRecipes.Add(ModValues.PropagatorItemId, 0);
 			}
 			else if (!ModEntry.Config.RecipeAlwaysAvailable
-				&& !Game1.player.eventsSeen.Contains(ModValues.EventId.ToString())
-				&& Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorInternalName))
+				&& !Game1.player.eventsSeen.Contains(ModEntry.Data.EventId.ToString())
+				&& Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorItemId))
 			{
 				// Remove the Propagator crafting recipe if cheat is disabled and player has not seen the requisite event
-				Game1.player.craftingRecipes.Remove(ModValues.PropagatorInternalName);
+				Game1.player.craftingRecipes.Remove(ModValues.PropagatorItemId);
 			}
 		}
 

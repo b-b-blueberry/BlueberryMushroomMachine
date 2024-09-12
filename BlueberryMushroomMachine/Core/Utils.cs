@@ -32,7 +32,7 @@ namespace BlueberryMushroomMachine
 		/// <returns>Frame for mushroom growth progress.</returns>
 		public static int GetOverlayGrowthFrame(float currentDays, int goalDays, int currentStack, int goalStack)
 		{
-			int frames = ModValues.OverlayMushroomFrames - 1;
+			int frames = ModEntry.Data.OverlayMushroomFrames - 1;
 			float maths = currentStack == goalStack ? frames : frames
 				* (currentStack - 1 + (currentDays / goalDays))
 				* goalDays / (goalStack * goalDays);
@@ -47,7 +47,7 @@ namespace BlueberryMushroomMachine
 		/// <returns>Source rectangle for mushroom overlay from overlay texture.</returns>
 		public static Rectangle GetOverlaySourceRect(GameLocation location, string itemId, int whichFrame)
 		{
-			int frames = ModValues.OverlayMushroomFrames;
+			int frames = ModEntry.Data.OverlayMushroomFrames;
 			bool isBasicMushroom = ModEntry.Data.Mushrooms.ContainsKey(itemId);
 			Point size = isBasicMushroom
 				? Propagator.OverlaySize

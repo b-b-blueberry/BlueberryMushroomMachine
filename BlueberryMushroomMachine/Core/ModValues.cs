@@ -9,7 +9,7 @@ namespace BlueberryMushroomMachine
 			= "blueberry";
 		public const string PackageName
 			= "BlueberryMushroomMachine";
-		public static readonly string PropagatorInternalName
+		public static readonly string PropagatorItemId
 			= $"{PackageName}.Propagator";
 
 		// Assets
@@ -41,14 +41,5 @@ namespace BlueberryMushroomMachine
 			= ModValues.ConsoleCommandPrefix + "status";
 		public static readonly string FixIdsConsoleCommand
 			= ModValues.ConsoleCommandPrefix + "fix_ids";
-
-		// Objects
-		public const int OverlayMushroomFrames = 4;
-		public const string RecipeDataFormat = "388 20 709 1/Home/{0}/true/null";
-
-		public static string RecipeData { get; set; } = null;
-
-		// Events
-		public const int EventId = 46370001;
 	}
 }

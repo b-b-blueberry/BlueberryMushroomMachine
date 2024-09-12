@@ -1,4 +1,9 @@
 {
+    // Objects
+    "RecipeFormat": "388 20 709 1/Home/{0}/true/null",
+    "OverlayMushroomFrames": 4,
+
+    // Mushrooms
     "Mushrooms": {
         "257": {
             "MaximumQuantity": 4,
@@ -37,5 +42,8 @@
         "200": 3,
         "100": 4,
         "50": 5
-    }
+    },
+
+    // Events
+    "EventId": 46370001
 }

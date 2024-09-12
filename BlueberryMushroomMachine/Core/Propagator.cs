@@ -89,10 +89,10 @@ namespace BlueberryMushroomMachine
 		public Propagator(Vector2 tile)
 		{
 			// Item
-			this.ItemId = ModValues.PropagatorInternalName;
+			this.ItemId = ModValues.PropagatorItemId;
 
 			// Object
-			this.Name = ModValues.PropagatorInternalName;
+			this.Name = ModValues.PropagatorItemId;
 			this.TileLocation = tile;
 			this.IsRecipe = false;
 			this.bigCraftable.Value = true;
@@ -559,7 +559,7 @@ namespace BlueberryMushroomMachine
 				goalDays: Propagator.DefaultDaysToGrow,
 				currentStack: this.heldObject.Value?.Stack ?? 0,
 				goalStack: this.MaximumStack);
-			int frames = ModValues.OverlayMushroomFrames;
+			int frames = ModEntry.Data.OverlayMushroomFrames;
 
 			if (isBasicMushroom)
 			{

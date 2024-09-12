@@ -19,12 +19,12 @@ namespace BlueberryMushroomMachine
 
 		public override bool Exists(string itemId)
 		{
-			return itemId == ModValues.PropagatorInternalName;
+			return itemId == ModValues.PropagatorItemId;
 		}
 
 		public override IEnumerable<string> GetAllIds()
 		{
-			return [ModValues.PropagatorInternalName];
+			return [ModValues.PropagatorItemId];
 		}
 
 		public override ParsedItemData GetData(string itemId)
@@ -34,7 +34,7 @@ namespace BlueberryMushroomMachine
 				itemId: itemId,
 				spriteIndex: 0,
 				textureName: ModEntry.MachineTexture.Name,
-				internalName: ModValues.PropagatorInternalName,
+				internalName: ModValues.PropagatorItemId,
 				displayName: Propagator.PropagatorDisplayName,
 				description: Propagator.PropagatorDescription,
 				category: Propagator.BigCraftableCategory,

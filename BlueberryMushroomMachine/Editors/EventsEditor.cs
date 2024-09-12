@@ -39,7 +39,7 @@ namespace BlueberryMushroomMachine.Editors
 
 			foreach (string key in json.Keys)
 			{
-				if (key.StartsWith(ModValues.EventId.ToString()))
+				if (key.StartsWith(ModEntry.Data.EventId.ToString()))
 				{
 					if (Game1.player.HouseUpgradeLevel >= 3)
 					{
@@ -61,7 +61,7 @@ namespace BlueberryMushroomMachine.Editors
 								ModEntry.I18n.Get("event.4637.0001.0001"),
 								ModEntry.I18n.Get("event.4637.0001.0002"),
 								ModEntry.I18n.Get("event.4637.0001.0003"),
-								ModValues.PropagatorInternalName);
+								ModValues.PropagatorItemId);
 							Log.D($"Injecting event.",
 								ModEntry.Config.DebugMode);
 							data.Add(key, value);
