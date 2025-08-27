@@ -3,16 +3,11 @@
 		<AssemblyName>BlueberryMushroomMachine</AssemblyName>
 		<RootNamespace>BlueberryMushroomMachine</RootNamespace>
 		<Version>2.3.0</Version>
-		<EnableHarmony>true</EnableHarmony>
 		<TargetFramework>net6.0</TargetFramework>
-	</PropertyGroup>
-
-	<PropertyGroup>
 		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Reference Include="Newtonsoft.Json" HintPath="$(GamePath)/smapi-internal/Newtonsoft.Json.dll" Private="false" />
 		<PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.2.0" />
 	</ItemGroup>
 </Project>

@@ -3,7 +3,6 @@
     <AssemblyName>BlueberryMushroomAutomation</AssemblyName>
     <RootNamespace>BlueberryMushroomAutomation</RootNamespace>
     <Version>2.3.0</Version>
-    <EnableHarmony>true</EnableHarmony>
 	<TargetFramework>net6.0</TargetFramework>
     <IgnoreModFilePatterns>BlueberryMushroomMachine.dll</IgnoreModFilePatterns>
   </PropertyGroup>
