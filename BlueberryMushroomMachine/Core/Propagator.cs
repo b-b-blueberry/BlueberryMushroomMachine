@@ -1,9 +1,8 @@
-﻿using System;
-using System.Xml.Serialization;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
-using StardewValley.Locations;
+using System;
+using System.Xml.Serialization;
 using Object = StardewValley.Object;
 
 namespace BlueberryMushroomMachine
@@ -12,9 +11,9 @@ namespace BlueberryMushroomMachine
 	public class Propagator : Object
 	{
 		/// <summary>
-		/// Overrides <see cref="StardewValley.Objects.IndoorPot.TypeDefinitionId"/> to use custom qualifier.
+		/// Overrides <see cref="Object.TypeDefinitionId"/> to use custom qualifier.
 		/// </summary>
-		public override string TypeDefinitionId => PropagatorItemDataDefinition.TypeDefinitionId;
+		public override string TypeDefinitionId => ModEntry.Data.PropagatorTypeDefinitionId;
 
 		// Source mushroom (placed by player)
 
@@ -63,19 +62,11 @@ namespace BlueberryMushroomMachine
 		/// <summary>
 		/// Display name of all <see cref="Propagator"/> objects.
 		/// </summary>
-		public static string PropagatorDisplayName => ModEntry.I18n.Get("machine.name");
+		public static string PropagatorDisplayName => ModEntry.GetTranslationOrKey("machine.name");
 		/// <summary>
 		/// Display name of all <see cref="Propagator"/> objects.
 		/// </summary>
-		public static string PropagatorDescription => ModEntry.I18n.Get("machine.desc");
-		/// <summary>
-		/// Dimensions of machine sprite in source texture.
-		/// </summary>
-		public static Point MachineSize => new(x: Game1.smallestTileSize, y: Game1.smallestTileSize * 2);
-		/// <summary>
-		/// Dimensions of overlay sprite in source texture.
-		/// </summary>
-		public static Point OverlaySize => new(x: 24, y: 32);
+		public static string PropagatorDescription => ModEntry.GetTranslationOrKey("machine.desc");
 		/// <summary>
 		/// Minutes between the current time and the next ready day.
 		/// This value does not affect actual growth rate, only the player-visible timer: growth occurs separately after each day.
@@ -89,10 +80,10 @@ namespace BlueberryMushroomMachine
 		public Propagator(Vector2 tile)
 		{
 			// Item
-			this.ItemId = ModValues.PropagatorItemId;
+			this.ItemId = ModEntry.Data.PropagatorId;
 
 			// Object
-			this.Name = ModValues.PropagatorItemId;
+			this.Name = ModEntry.Data.PropagatorId;
 			this.TileLocation = tile;
 			this.IsRecipe = false;
 			this.bigCraftable.Value = true;
@@ -410,13 +401,13 @@ namespace BlueberryMushroomMachine
 			{
 				if (!probe)
 				{
-					Game1.showRedMessage(message: ModEntry.I18n.Get("error.truffle"));
+					Game1.showRedMessage(message: ModEntry.GetTranslationOrKey("error.truffle"));
 				}
 				return false;
 			}
 
 			// Ignore things that are not mushrooms
-			if (dropInItem is not Object obj || obj.bigCraftable.Value || !Utils.IsValidMushroom(o: obj))
+			if (dropInItem is not Object o || !Utils.IsValidMushroom(o: o))
 			{
 				return false;
 			}
@@ -424,17 +415,11 @@ namespace BlueberryMushroomMachine
 			// Ignore if location is not appropriate
 			if (who is not null)
 			{
-				if (!((who.currentLocation is Cellar && ModEntry.Config.WorksInCellar)
-					|| (who.currentLocation is FarmCave or IslandFarmCave && ModEntry.Config.WorksInFarmCave)
-					|| (who.currentLocation.parentLocationName is not null && ModEntry.Config.WorksInBuildings)
-					|| (who.currentLocation is FarmHouse && ModEntry.Config.WorksInFarmHouse)
-					|| (who.currentLocation.IsGreenhouse && ModEntry.Config.WorksInGreenhouse)
-					|| (who.currentLocation.IsOutdoors && ModEntry.Config.WorksOutdoors)))
+				if (!Utils.IsValidMachineLocation(who.currentLocation))
 				{
-					// Ignore bad machine locations
 					if (!probe)
 					{
-						Game1.showRedMessage(message: ModEntry.I18n.Get("error.location"));
+						Game1.showRedMessage(message: ModEntry.GetTranslationOrKey("error.location"));
 					}
 					return false;
 				}
@@ -464,7 +449,7 @@ namespace BlueberryMushroomMachine
 			// Set dropIn object as source mushroom
 			if (this.SourceMushroomItemId is null)
 			{
-				this.SetSourceObject(dropIn: obj);
+				this.SetSourceObject(dropIn: o);
 				who?.currentLocation.playSound("Ship");
 				return true;
 			}
@@ -527,7 +512,7 @@ namespace BlueberryMushroomMachine
 				globalPosition: new Vector2(x: x, y: y - 1) * Game1.tileSize);
 			Rectangle destination = new(
 				location: (position - pulse / 2).ToPoint() + shake,
-				size: scaleSizeToPulse(size: Propagator.MachineSize, pulse: pulse));
+				size: scaleSizeToPulse(size: ModEntry.Data.MachineSpriteSize, pulse: pulse));
 			Rectangle source = Utils.GetMachineSourceRect(
 				location: Game1.currentLocation,
 				tile: this.TileLocation);
@@ -554,19 +539,19 @@ namespace BlueberryMushroomMachine
 
 			// Draw the held object overlay
 			bool isBasicMushroom = ModEntry.Data.Mushrooms.ContainsKey(this.SourceMushroomItemId);
-			int whichFrame = Utils.GetOverlayGrowthFrame(
+			int whichFrame = Utils.GetOverlaySpriteFrame(
 				currentDays: this.Growth,
 				goalDays: Propagator.DefaultDaysToGrow,
 				currentStack: this.heldObject.Value?.Stack ?? 0,
 				goalStack: this.MaximumStack);
-			int frames = ModEntry.Data.OverlayMushroomFrames;
+			int frames = ModEntry.Data.OverlaySpriteFrames;
 
 			if (isBasicMushroom)
 			{
 				// Centre mushroom overlay on base sprite
-				destination.Offset(amount: (source.Size.ToVector2() - Propagator.OverlaySize.ToVector2()) * Game1.pixelZoom / 2);
-				destination.Size = scaleSizeToPulse(size: Propagator.OverlaySize, pulse: pulse);
-				source = Utils.GetOverlaySourceRect(
+				destination.Offset(amount: (source.Size.ToVector2() - ModEntry.Data.OverlaySpriteSize.ToVector2()) * Game1.pixelZoom / 2);
+				destination.Size = scaleSizeToPulse(size: ModEntry.Data.OverlaySpriteSize, pulse: pulse);
+				source = Utils.GetOverlaySpriteSourceRect(
 					location: Game1.currentLocation,
 					itemId: this.SourceMushroomItemId,
 					whichFrame: whichFrame);
@@ -584,7 +569,6 @@ namespace BlueberryMushroomMachine
 					width: (int)((Game1.tileSize + pulse.X) * growthScale),
 					height: (int)((Game1.tileSize + pulse.Y / 2f) * growthScale));
 			}
-
 
 			b.Draw(
 				texture: isBasicMushroom ? ModEntry.OverlayTexture : Game1.objectSpriteSheet,
@@ -659,7 +643,7 @@ namespace BlueberryMushroomMachine
 		{
 			Rectangle destination = new(
 				location: objectPosition.ToPoint(),
-				size: (Propagator.MachineSize.ToVector2() * Game1.pixelZoom).ToPoint());
+				size: (ModEntry.Data.MachineSpriteSize.ToVector2() * Game1.pixelZoom).ToPoint());
 			float layerDepth = Math.Max(0f, (f.StandingPixel.Y + 3f) / 10000f);
 			Propagator.DrawMachine(
 				spriteBatch: spriteBatch,
@@ -689,11 +673,11 @@ namespace BlueberryMushroomMachine
 			Vector2 position = location + new Vector2(value: 1) * Game1.tileSize / 2;
 			Rectangle destination = new(
 				location: position.ToPoint(),
-				size: (Propagator.MachineSize.ToVector2() * scale).ToPoint());
+				size: (ModEntry.Data.MachineSpriteSize.ToVector2() * scale).ToPoint());
 			Propagator.DrawMachine(
 				spriteBatch: spriteBatch,
 				destination: destination,
-				origin: Propagator.MachineSize.ToVector2() / 2,
+				origin: ModEntry.Data.MachineSpriteSize.ToVector2() / 2,
 				color: color,
 				alpha: transparency,
 				layerDepth: layerDepth,
@@ -759,7 +743,7 @@ namespace BlueberryMushroomMachine
 			spriteBatch.Draw(
 				texture: ModEntry.MachineTexture,
 				destinationRectangle: destination,
-				sourceRectangle: source ?? new Rectangle(location: Point.Zero, size: Propagator.MachineSize),
+				sourceRectangle: source ?? new Rectangle(location: Point.Zero, size: ModEntry.Data.MachineSpriteSize),
 				color: Color.White * alpha,
 				rotation: 0f,
 				origin: origin,

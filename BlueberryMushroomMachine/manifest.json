@@ -5,10 +5,13 @@
 	"Description": "Mushroom Propagator for the Farmhouse cellar and elsewhere.",
 	"UniqueID": "blueberry.MushroomPropagator",
 	"EntryDll": "BlueberryMushroomMachine.dll",
-	"MinimumApiVersion": "4.0.0-alpha.0",
+	"MinimumApiVersion": "4.0.0",
 	"Dependencies": [
 		{
 			"UniqueID": "spacechase0.SpaceCore"
+		},
+		{
+			"UniqueID": "Pathoschild.ContentPatcher"
 		}
 	],
 	"UpdateKeys": [ "Nexus:4637" ]

@@ -1,13 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using BlueberryMushroomMachine.Editors;
 using BlueberryMushroomMachine.Interface;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace BlueberryMushroomMachine
 {
@@ -15,32 +14,51 @@ namespace BlueberryMushroomMachine
 	{
 		public class ModData
 		{
-			// Objects
-			public int OverlayMushroomFrames;
-			public string RecipeFormat;
+            // Propagator
+			/// <summary>Unique ID of machine item.</summary>
+            public string PropagatorId;
+			/// <summary>Qualifier used for machine type in item registry.</summary>
+			public string PropagatorTypeDefinitionId;
+            /// <summary>Dimensions of machine sprite in source texture.</summary>
+            public Point MachineSpriteSize;
+            /// <summary>Dimensions of overlay sprite in source texture.</summary>
+            public Point OverlaySpriteSize;
+			/// <summary>Number of mushroom growth stage sprites in overlay texture.</summary>
+            public int OverlaySpriteFrames;
 
-			// Mushrooms
-			public Dictionary<string, MushroomData> Mushrooms;
+            // Mushrooms
+            /// <summary>Map of Propagator input item IDs to their respective data.</summary>
+            public Dictionary<string, MushroomData> Mushrooms;
+            /// <summary>Map of Propagator input item purchase price thresholds to growth rate. Ordered from highest to lowest value.</summary>
 			public Dictionary<int, float> MushroomGrowthRatePerPrice;
+            /// <summary>Map of Propagator input item purchase price thresholds to maximum quantity held. Ordered from highest to lowest value.</summary>
 			public Dictionary<int, int> MushroomMaximumQuantityPerPrice;
 
-			// Events
-			public int EventId;
-		}
+            // Events
+            /// <summary>Unique ID of Propagator crafting recipe event.</summary>
+            public string EventId;
+
+			// GSQs
+            /// <summary>Unique ID of GSQ for Propagator usable locations.</summary>
+            public string LocationAllowedGameStateQueryId;
+            /// <summary>Unique ID of GSQ for FarmCave type restrictions.</summary>
+			public string FarmCaveAllowedGameStateQueryId;
+        }
 
 		public class MushroomData
 		{
-			public int SourceRectIndex;
+			public int OverlaySpriteIndex = -1;
 			public float GrowthRate;
 			public int MaximumQuantity;
 		}
 
 		public static ModEntry Instance { get; private set; }
 		public static Config Config { get; private set; }
-		public static ITranslationHelper I18n => ModEntry.Instance.Helper.Translation;
 		public static Texture2D MachineTexture { get; private set; }
 		public static Texture2D OverlayTexture { get; private set; }
 		public static ModData Data { get; private set; }
+
+		private static Dictionary<string, string> Translations { get; set; }
 
 		public override void Entry(IModHelper helper)
 		{
@@ -50,7 +68,30 @@ namespace BlueberryMushroomMachine
 			this.Helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
 		}
 
-		private bool TryLoadApis()
+        public static string GetTranslationOrKey(string key)
+        {
+            return ModEntry.Translations.GetValueOrDefault(key) ?? key;
+        }
+
+        public static string GetTranslationOrNull(string key)
+        {
+            return ModEntry.Translations.GetValueOrDefault(key);
+        }
+
+        private bool CheckRequirements()
+        {
+            // Check for Content Patcher component
+            const string cp = "blueberry.MushroomPropagator.CP";
+            if (!this.Helper.ModRegistry.IsLoaded(cp))
+            {
+                Log.E($"Couldn't find Content Patcher component '{cp}'. Did you install ALL folders from this mod?");
+                return false;
+            }
+
+			return true;
+        }
+
+        private bool TryLoadApis()
 		{
 			// SpaceCore setup
 			try
@@ -59,7 +100,6 @@ namespace BlueberryMushroomMachine
 					.GetApi<ISpaceCoreAPI>
 					("spacechase0.SpaceCore");
 				spacecoreApi.RegisterSerializerType(typeof(Propagator));
-				ItemRegistry.AddTypeDefinition(new PropagatorItemDataDefinition());
 			}
 			catch (Exception e)
 			{
@@ -85,7 +125,7 @@ namespace BlueberryMushroomMachine
 					var entries = new (string i18n, string propertyName, Type type)[] {
 						("working_rules", null, null),
 
-						("disabled_for_fruit_cave", nameof(ModEntry.Config.DisabledForFruitCave), typeof(bool)),
+						("disabled_for_fruit_cave", nameof(ModEntry.Config.MushroomCaveOnly), typeof(bool)),
 						("recipe_always_available", nameof(ModEntry.Config.RecipeAlwaysAvailable), typeof(bool)),
 						("maximum_days_to_mature", nameof(ModEntry.Config.MaximumDaysToMature), typeof(int)),
 						("maximum_quantity_limits_doubled", nameof(ModEntry.Config.MaximumQuantityLimitsDoubled), typeof(bool)),
@@ -106,10 +146,10 @@ namespace BlueberryMushroomMachine
 						BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
 						if (propertyName is null)
 						{
-							Translation title = ModEntry.I18n.Get($"config.title.{i18n}");
+							string title = ModEntry.GetTranslationOrKey($"config.title.{i18n}");
 							gmcm.AddSectionTitle(
 								this.ModManifest,
-								text: () => title.HasValue() ? title : i18n);
+								text: () => title);
 						}
 						else
 						{
@@ -124,16 +164,16 @@ namespace BlueberryMushroomMachine
 								}
 							}
 							PropertyInfo property = typeof(Config).GetProperty(propertyName, flags);
-							Translation name = I18n.Get($"config.name.{i18n}");
-							Translation description = I18n.Get($"config.description.{i18n}");
+							string name = ModEntry.GetTranslationOrNull($"config.name.{i18n}");
+                            string description = ModEntry.GetTranslationOrNull($"config.description.{i18n}");
 							if (type == typeof(bool))
 							{
 								gmcm.AddBoolOption(
 									mod: this.ModManifest,
 									getValue: () => (bool)property.GetValue(ModEntry.Config),
 									setValue: (bool value) => onChanged(property: property, value: value),
-									name: () => name.HasValue() ? name : propertyName,
-									tooltip: () => description.HasValue() ? description : null);
+									name: () => name ?? propertyName,
+									tooltip: () => description);
 							}
 							else if (type == typeof(int))
 							{
@@ -141,8 +181,8 @@ namespace BlueberryMushroomMachine
 									mod: this.ModManifest,
 									getValue: () => (int)property.GetValue(ModEntry.Config),
 									setValue: (int value) => onChanged(property: property, value: value),
-									name: () => name.HasValue() ? name : propertyName,
-									tooltip: () => description.HasValue() ? description : null,
+									name: () => name ?? propertyName,
+									tooltip: () => description,
 									min: 1,
 									max: 28,
 									formatValue: (int value) => $"{value:0}");
@@ -166,7 +206,6 @@ namespace BlueberryMushroomMachine
 
 		private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
 		{
-			// Display mod config
 			try
 			{
 				if (ModEntry.Config.DebugMode)
@@ -175,13 +214,12 @@ namespace BlueberryMushroomMachine
 						  + "\nWorks in locations:"
 						  + $"\n    {ModEntry.Config.WorksInCellar} {ModEntry.Config.WorksInFarmCave} {ModEntry.Config.WorksInBuildings}"
 						  + $"\n    {ModEntry.Config.WorksInFarmHouse} {ModEntry.Config.WorksInGreenhouse} {ModEntry.Config.WorksOutdoors}\n"
-						  + $"\nMushroom Cave:  {ModEntry.Config.DisabledForFruitCave}"
+						  + $"\nMushroom Cave:  {ModEntry.Config.MushroomCaveOnly}"
 						  + $"\nRecipe Cheat:   {ModEntry.Config.RecipeAlwaysAvailable}"
 						  + $"\nQuantity Cheat: {ModEntry.Config.MaximumQuantityLimitsDoubled}"
 						  + $"\nDays To Mature: {ModEntry.Config.MaximumDaysToMature}"
 						  + $"\nGrowth Pulse:   {ModEntry.Config.PulseWhenGrowing}"
 						  + $"\nOnly Tools Pop: {ModEntry.Config.OnlyToolsCanRemoveRootMushrooms}"
-						  + $"\nCustom Objects: {ModEntry.Config.OtherObjectsThatCanBeGrown.Aggregate("", (s, s1) => $"{s}\n    {s1}")}\n"
 						  + $"\nLanguage:       {LocalizedContentManager.CurrentLanguageCode.ToString().ToUpper()}"
 						  + $"\nDebugging:      {ModEntry.Config.DebugMode}",
 						ModEntry.Config.DebugMode);
@@ -192,63 +230,73 @@ namespace BlueberryMushroomMachine
 				Log.E($"Failed to display mod config.{Environment.NewLine}{ex}");
 			}
 
-			// Load behaviours for required and optional mods
-			if (!this.TryLoadApis())
+			// Skip loading this mod entirely if required content isn't found
+			if (!this.CheckRequirements())
 			{
-				Log.E("Failed to load required mods. Mod will not be loaded.");
+				Log.E("Couldn't find required mods. Mod will not be loaded.");
 				return;
 			}
 
-			// Add SMAPI console commands
-			this.RegisterConsoleCommands();
-
-			// Event handlers
-			this.Helper.Events.GameLoop.DayStarted += this.OnDayStarted;
-			this.Helper.Events.Content.AssetRequested += this.OnAssetRequested;
-
-			// Load mushroom overlay texture for all filled machines
-			ModEntry.Data = Game1.content.Load<ModData>(ModValues.GameContentDataPath);
-			ModEntry.MachineTexture = Game1.content.Load<Texture2D>(ModValues.GameContentMachinePath);
-			ModEntry.OverlayTexture = Game1.content.Load<Texture2D>(ModValues.GameContentOverlayPath);
+			// Defer loading until after SMAPI has registered all mods and CP has loaded all content packs
+            this.Helper.Events.GameLoop.OneSecondUpdateTicked += this.InitLate;
 		}
 
-		private void OnAssetRequested(object sender, AssetRequestedEventArgs e)
-		{
-			// Handle mod assets
-			if (e.NameWithoutLocale.IsEquivalentTo(ModValues.GameContentDataPath))
-				e.LoadFromModFile<ModData>(relativePath: ModValues.DataPath, priority: AssetLoadPriority.Exclusive);
-			else if (e.NameWithoutLocale.IsEquivalentTo(ModValues.GameContentMachinePath))
-				e.LoadFromModFile<Texture2D>(relativePath: ModValues.MachinePath, priority: AssetLoadPriority.Exclusive);
-			else if (e.NameWithoutLocale.IsEquivalentTo(ModValues.GameContentOverlayPath))
-				e.LoadFromModFile<Texture2D>(relativePath: ModValues.OverlayPath, priority: AssetLoadPriority.Exclusive);
+        private void InitLate(object sender, OneSecondUpdateTickedEventArgs e)
+        {
+			this.Helper.Events.GameLoop.OneSecondUpdateTicked -= this.InitLate;
 
-			// Handle asset requests
-			_ = CraftingRecipesEditor.ApplyEdit(e) || EventsEditor.ApplyEdit(e);
-		}
+            ModEntry.Data = Game1.content.Load<ModData>(ModValues.GameContentDataPath);
+			ModEntry.MachineTexture = Game1.content.Load<Texture2D>(ModValues.GameContentMachineSpritePath);
+			ModEntry.OverlayTexture = Game1.content.Load<Texture2D>(ModValues.GameContentOverlaySpritePath);
+			ModEntry.Translations = Game1.content.Load<Dictionary<string, string>>(ModValues.GameContentTranslationsPath);
 
-		private void OnDayStarted(object sender, DayStartedEventArgs e)
+            if (!this.TryLoadApis())
+            {
+                Log.E("Failed to register changes with other mods. Mod will not be loaded.");
+                return;
+            }
+
+            this.RegisterConsoleCommands();
+
+            this.RegisterGameFeatures();
+
+            this.Helper.Events.GameLoop.DayStarted += this.OnDayStarted;
+
+            LocalizedContentManager.OnLanguageChange += this.OnLanguageChanged;
+        }
+
+        private void OnDayStarted(object sender, DayStartedEventArgs e)
 		{
-			// Add Robin's pre-Demetrius-event dialogue
-			if (Game1.player.daysUntilHouseUpgrade.Value == 2 && Game1.player.HouseUpgradeLevel == 2)
-			{
-				Game1.player.activeDialogueEvents.Add("event.4637.0000.0000", 7);
-			}
+			this.Helper.GameContent.InvalidateCache(ModValues.GameContentDataPath);
 
 			// Update player recipes
 			if (ModEntry.Config.RecipeAlwaysAvailable
-				&& !Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorItemId))
+				&& !Game1.player.craftingRecipes.ContainsKey(ModEntry.Data.PropagatorId))
 			{
 				// Add the Propagator crafting recipe if the cheat is enabled
-				Game1.player.craftingRecipes.Add(ModValues.PropagatorItemId, 0);
+				Game1.player.craftingRecipes.Add(ModEntry.Data.PropagatorId, 0);
 			}
 			else if (!ModEntry.Config.RecipeAlwaysAvailable
-				&& !Game1.player.eventsSeen.Contains(ModEntry.Data.EventId.ToString())
-				&& Game1.player.craftingRecipes.ContainsKey(ModValues.PropagatorItemId))
+				&& !Game1.player.eventsSeen.Contains(ModEntry.Data.EventId)
+				&& Game1.player.craftingRecipes.ContainsKey(ModEntry.Data.PropagatorId))
 			{
 				// Remove the Propagator crafting recipe if cheat is disabled and player has not seen the requisite event
-				Game1.player.craftingRecipes.Remove(ModValues.PropagatorItemId);
+				Game1.player.craftingRecipes.Remove(ModEntry.Data.PropagatorId);
 			}
-		}
+        }
+
+        private void OnLanguageChanged(LocalizedContentManager.LanguageCode code)
+        {
+            this.Helper.GameContent.InvalidateCache(ModValues.GameContentTranslationsPath);
+        }
+
+        private void RegisterGameFeatures()
+        {
+            ItemRegistry.AddTypeDefinition(new PropagatorItemDataDefinition());
+
+            GameStateQuery.Register(ModEntry.Data.LocationAllowedGameStateQueryId, (query, context) => Utils.IsValidMachineLocation(context.Location));
+            GameStateQuery.Register(ModEntry.Data.FarmCaveAllowedGameStateQueryId, (query, context) => Game1.MasterPlayer.caveChoice.Value is Farmer.caveMushrooms || !ModEntry.Config.MushroomCaveOnly);
+        }
 
 		private void RegisterConsoleCommands()
 		{

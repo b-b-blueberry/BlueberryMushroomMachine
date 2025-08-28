@@ -1,16 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using StardewValley;
 using StardewValley.Extensions;
 using StardewValley.Locations;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using static BlueberryMushroomMachine.ModEntry;
 using Object = StardewValley.Object;
 
 namespace BlueberryMushroomMachine
 {
-	internal static class Utils
+	public static class Utils
 	{
 		/// <summary>
 		/// Fetches all propagator machines in a given location.
@@ -30,9 +30,9 @@ namespace BlueberryMushroomMachine
 		/// <param name="currentStack">Current count of mushrooms.</param>
 		/// <param name="goalStack">Maximum amount of mushrooms of this type.</param>
 		/// <returns>Frame for mushroom growth progress.</returns>
-		public static int GetOverlayGrowthFrame(float currentDays, int goalDays, int currentStack, int goalStack)
+		public static int GetOverlaySpriteFrame(float currentDays, int goalDays, int currentStack, int goalStack)
 		{
-			int frames = ModEntry.Data.OverlayMushroomFrames - 1;
+			int frames = ModEntry.Data.OverlaySpriteFrames - 1;
 			float maths = currentStack == goalStack ? frames : frames
 				* (currentStack - 1 + (currentDays / goalDays))
 				* goalDays / (goalStack * goalDays);
@@ -42,20 +42,20 @@ namespace BlueberryMushroomMachine
 		/// <summary>
 		/// Generates a clipping rectangle for the mushroom overlay,
 		/// appropriate to the current held mushroom, and its held quantity.
-		/// Undefined mushrooms will use their default object rectangle.
+		/// Undefined mushrooms will use their default object appearance.
 		/// </summary>
 		/// <returns>Source rectangle for mushroom overlay from overlay texture.</returns>
-		public static Rectangle GetOverlaySourceRect(GameLocation location, string itemId, int whichFrame)
+		public static Rectangle GetOverlaySpriteSourceRect(GameLocation location, string itemId, int whichFrame)
 		{
-			int frames = ModEntry.Data.OverlayMushroomFrames;
-			bool isBasicMushroom = ModEntry.Data.Mushrooms.ContainsKey(itemId);
-			Point size = isBasicMushroom
-				? Propagator.OverlaySize
+			int frames = ModEntry.Data.OverlaySpriteFrames;
+			bool hasOverlaySprite = ModEntry.Data.Mushrooms.TryGetValue(itemId, out var data) && data.OverlaySpriteIndex >= 0;
+			Point size = hasOverlaySprite
+				? ModEntry.Data.OverlaySpriteSize
 				: new Point(x: Game1.smallestTileSize, y: Game1.smallestTileSize);
-			return isBasicMushroom
+			return hasOverlaySprite
 				? new Rectangle(
 					x: (Utils.IsDarkLocation(location) ? size.X * frames : 0) + whichFrame * size.X,
-					y: GetMushroomSourceRectIndex(itemId: itemId) * size.Y,
+					y: GetMushroomOverlaySpriteIndex(itemId: itemId) * size.Y,
 					width: size.X,
 					height: size.Y)
 				: ItemRegistry.GetDataOrErrorItem(itemId).GetSourceRect();
@@ -73,8 +73,8 @@ namespace BlueberryMushroomMachine
 			return Game1.getSourceRectForStandardTileSheet(
 					tileSheet: ModEntry.MachineTexture,
 					tilePosition: (Utils.IsDarkLocation(location) ? 2 : 0) + ((tile.X + tile.Y) % 3 == 1 ? 1 : 0),
-					width: Propagator.MachineSize.X,
-					height: Propagator.MachineSize.Y);
+					width: ModEntry.Data.MachineSpriteSize.X,
+					height: ModEntry.Data.MachineSpriteSize.Y);
 		}
 
 		/// <summary>
@@ -99,6 +99,25 @@ namespace BlueberryMushroomMachine
 			return location is FarmCave or IslandFarmCave;
 		}
 
+		/// <summary>
+		/// Check for locations where the Propagator can grow mushrooms.
+		/// </summary>
+		/// <param name="location">Location to check.</param>
+		/// <returns>Whether the given location will allow the player to add mushrooms to a Propagator item.</returns>
+		public static bool IsValidMachineLocation(GameLocation location) {
+			return (location is Cellar && ModEntry.Config.WorksInCellar)
+				|| (location is FarmCave or IslandFarmCave && ModEntry.Config.WorksInFarmCave)
+				|| (location.parentLocationName is not null && ModEntry.Config.WorksInBuildings)
+				|| (location is FarmHouse && ModEntry.Config.WorksInFarmHouse)
+				|| (location.IsGreenhouse && ModEntry.Config.WorksInGreenhouse)
+				|| (location.IsOutdoors && ModEntry.Config.WorksOutdoors);
+		}
+
+		/// <summary>
+		/// Check for items that can be added to a Propagator item.
+		/// </summary>
+		/// <param name="o">Item to check.</param>
+		/// <returns>Whether the given item is a valid Propagator input.</returns>
 		public static bool IsValidMushroom(Object o)
 		{
 			// From the vanilla Utility.IsPerfectlyNormalObjectAtParentSheetIndex or whatever that method was again
@@ -106,17 +125,13 @@ namespace BlueberryMushroomMachine
 			if (o is null || !o.HasTypeObject())
 				return false;
 
-			return ModEntry.Data.Mushrooms.ContainsKey(o.ItemId)
-				|| ModEntry.Config.OtherObjectsThatCanBeGrown.Contains(o.ItemId)
-				|| ((o.Category == Object.VegetableCategory || o.Category == Object.GreensCategory)
-					&& (o.ItemId.Contains("mushroom", StringComparison.InvariantCultureIgnoreCase)
-						|| o.ItemId.Contains("fungus", StringComparison.InvariantCultureIgnoreCase)));
+			return ModEntry.Data.Mushrooms.ContainsKey(o.ItemId);
 		}
 
-		public static int GetMushroomSourceRectIndex(string itemId)
+		public static int GetMushroomOverlaySpriteIndex(string itemId)
 		{
 			return ModEntry.Data.Mushrooms.TryGetValue(itemId, out MushroomData entry)
-				? entry.SourceRectIndex
+				? entry.OverlaySpriteIndex
 				: -1;
 		}
 

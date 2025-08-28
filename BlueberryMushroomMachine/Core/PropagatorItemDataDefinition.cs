@@ -1,16 +1,14 @@
-﻿using System.Collections.Generic;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using StardewValley.ItemTypeDefinitions;
+using System.Collections.Generic;
 
 namespace BlueberryMushroomMachine
 {
 	public class PropagatorItemDataDefinition : BaseItemDataDefinition
 	{
-		public static string TypeDefinitionId => "(BB_MP)";
-
-		public override string Identifier => PropagatorItemDataDefinition.TypeDefinitionId;
+		public override string Identifier => ModEntry.Data.PropagatorTypeDefinitionId;
 
 		public override Item CreateItem(ParsedItemData data)
 		{
@@ -19,12 +17,12 @@ namespace BlueberryMushroomMachine
 
 		public override bool Exists(string itemId)
 		{
-			return itemId == ModValues.PropagatorItemId;
+			return itemId == ModEntry.Data.PropagatorId;
 		}
 
 		public override IEnumerable<string> GetAllIds()
 		{
-			return [ModValues.PropagatorItemId];
+			return [ModEntry.Data.PropagatorId];
 		}
 
 		public override ParsedItemData GetData(string itemId)
@@ -34,7 +32,7 @@ namespace BlueberryMushroomMachine
 				itemId: itemId,
 				spriteIndex: 0,
 				textureName: ModEntry.MachineTexture.Name,
-				internalName: ModValues.PropagatorItemId,
+				internalName: itemId,
 				displayName: Propagator.PropagatorDisplayName,
 				description: Propagator.PropagatorDescription,
 				category: Propagator.BigCraftableCategory,

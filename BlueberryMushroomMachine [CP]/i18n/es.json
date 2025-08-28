@@ -1,0 +1,14 @@
+﻿{
+    "machine.name": "Propagador",
+    "machine.desc": "Inocular con un hongo para hacer que gradualmente crezcan más.",
+
+    "error.location": "Las setas no crecerán aquí.",
+    "error.truffle": "Las trufas no crecerán de esta manera.",
+
+    "dialogue.propagator.recipe.robin": "Oye @. Parece que perdí un par de mis registros. ¿Los has visto por aquí?#$b#… De hecho, olvida que pregunté.$s#",
+
+    "event.propagator.recipe.demetrius.1": "Hola @! Decidí pasar y revisar la cueva que preparé antes para cultivar hongos en tu granja.#$b#Lo has aprovechado al máximo, imagino? Ciertamente ha ayudado a mi investigacíon. De hecho, He hecho otro gran avance.#$b#Esa cueva ha sido muy útil para observar hongos locales en su entorno natural, pero se me ocurrió un nuevo dispositivo que hará que los hongos sean mucho más fáciles de cultivar.",
+    "event.propagator.recipe.demetrius.2": "Has aprendido a crear un 'Propagador'.",
+    "event.propagator.recipe.demetrius.3": "Con estos esquemas, deberías poder construirlo tú mismo y colocarlo en cualquier lugar con condiciones ambientales similares a la cueva.#$b#Si tuviera una bodega nueva, ese sería el primer lugar que trataría!$h#",
+    "event.propagator.recipe.demetrius.4": "¿Como estas @? ¿Ya has cultivado hongos interesantes con mi pequeño dispositivo?"
+}

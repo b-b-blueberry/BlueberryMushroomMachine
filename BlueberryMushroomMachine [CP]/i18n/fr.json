@@ -1,0 +1,15 @@
+﻿{
+    // French translation provided by Inu'tile
+    "machine.name": "Propagateur",
+    "machine.desc": "Inoculer un champignon pour grossir progressivement.",
+
+    "error.location": "Les champignons ne poussent pas ici.",
+    "error.truffle": "Les truffes ne poussent pas de cette façon.",
+
+    "dialogue.propagator.recipe.robin": "Hey @. Il me semble avoir perdu quelques notes. Les avez-vous vus autour?#$b#… En fait, oubliez que j'ai demandé.$s#",
+
+    "event.propagator.recipe.demetrius.1": "Salut @! J'ai décidé de m'arrêter et de vérifier la grotte où j'ai installée plus tôt la culture des champignons dans votre ferme. #$b# Vous en avez profité j'imagine? Cela va certainement aider mes recherches. En fait, j'ai fait une autre percée scientifique.#$b#Cette grotte a été très utile pour observer les champignons locaux dans leur environnement naturel, mais j'ai trouvé un nouvel appareil qui facilitera la croissance des champignons.",
+    "event.propagator.recipe.demetrius.2": "J'ai appris à fabriquer un «Propagateur».",
+    "event.propagator.recipe.demetrius.3": "Avec ce schéma, vous devriez pouvoir le construire vous-même et le placer n'importe où avec des conditions environnementales similaires à la grotte.#$b#Si j'avais une cave toute neuve, ce serait le premier endroit où j'essaierais!$h#",
+    "event.propagator.recipe.demetrius.4": "Comment allez vous, @? Avez-vous déjà cultivé des champignons intéressants avec mon petit appareil?"
+}

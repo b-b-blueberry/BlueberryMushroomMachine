@@ -7,7 +7,7 @@ namespace BlueberryMushroomAutomation
 	public class PropagatorMachine : IMachine
 	{
 		private readonly BlueberryMushroomMachine.Propagator Entity;
-		public string MachineTypeID { get; } = $"{BlueberryMushroomMachine.ModValues.PackageName}";
+		public string MachineTypeID { get; } = BlueberryMushroomMachine.ModEntry.Data.PropagatorId;
 		public GameLocation Location { get; }
 		public Rectangle TileArea { get; }
 

@@ -1,0 +1,160 @@
+{
+	"Format": "2.7.0",
+	"DynamicTokens": [
+		{
+			// Target asset path
+			"Name": "Assets",
+			"Value": "Mods/blueberry.MushroomPropagator/Assets"
+		},
+		{
+			// Propagator item and recipe ID
+			"Name": "PropagatorId",
+			"Value": "{{ModId}}_Propagator"
+		},
+		{
+			// Qualifier for Propagator item ID
+			"Name": "PropagatorTypeDefinitionId",
+			"Value": "(BB_MM_PROPAGATOR)"
+		},
+		{
+			// Propagator qualified item ID
+			"Name": "PropagatorQualifiedId",
+			"Value": "{{PropagatorTypeDefinitionId}}{{PropagatorId}}"
+		},
+		{
+			// Propagator recipe event ID
+			"Name": "EventId",
+			"Value": "{{ModId}}_PropagatorRecipe"
+		},
+		{
+			// Propagator working location GSQ ID
+			"Name": "LocationAllowedGameStateQueryId",
+			"Value": "{{ModId}}_LOCATION_ALLOWED"
+		},
+		{
+			// FarmCave type restriction GSQ ID
+			"Name": "FarmCaveAllowedGameStateQueryId",
+			"Value": "{{ModId}}_FARM_CAVE_ALLOWED"
+		}
+	],
+	"Changes": [
+		// Data
+		{
+			"Action": "Load",
+			"Target": "{{Assets}}/Data",
+			"FromFile": "assets/blank.json"
+		},
+		{
+			"Action": "EditData",
+			"Target": "{{Assets}}/Data",
+			"Entries": {
+				// Propagator
+				"PropagatorId": "{{ModId}}_Propagator",
+				"PropagatorTypeDefinitionId": "{{PropagatorTypeDefinitionId}}",
+				"MachineSpriteSize": {
+					"X": 16,
+					"Y": 32
+				},
+				"OverlaySpriteSize": {
+					"X": 24,
+					"Y": 32
+				},
+				"OverlaySpriteFrames": 4,
+
+				// Mushrooms
+				"Mushrooms": {
+					"257": { // Morel
+						"MaximumQuantity": 4,
+						"GrowthRate": 0.5,
+						"OverlaySpriteIndex": 2
+					},
+					"281": { // Chanterelle
+						"MaximumQuantity": 4,
+						"GrowthRate": 0.5,
+						"OverlaySpriteIndex": 1
+					},
+					"404": { // Common Mushroom
+						"MaximumQuantity": 6,
+						"GrowthRate": 1.0,
+						"OverlaySpriteIndex": 0
+					},
+					"420": { // Red Mushroom
+						"MaximumQuantity": 3,
+						"GrowthRate": 0.5,
+						"OverlaySpriteIndex": 3
+					},
+					"422": { // Purple Mushroom
+						"MaximumQuantity": 2,
+						"GrowthRate": 0.25,
+						"OverlaySpriteIndex": 4
+					}
+				},
+				"MushroomGrowthRatePerPrice": {
+					"9999999": 0.25,
+					"200": 0.5,
+					"100": 0.75,
+					"50": 1.0
+				},
+				"MushroomMaximumQuantityPerPrice": {
+					"9999999": 2,
+					"200": 3,
+					"100": 4,
+					"50": 5
+				},
+
+				// Events
+				"EventId": "{{EventId}}",
+
+				// GSQs
+				"LocationAllowedGameStateQueryId": "{{LocationAllowedGameStateQueryId}}",
+				"FarmCaveAllowedGameStateQueryId": "{{FarmCaveAllowedGameStateQueryId}}"
+			}
+		},
+		// Events
+		{
+			"Action": "EditData",
+			"Target": "Data/Events/Farm",
+			"Entries": {
+				// Propagator recipe event
+
+				// At: Farm, morning
+				// For: Any player with a fully upgraded house and the appropriate farm cave type
+				// Host player must have seen FarmCave event, regardless of farm cave type
+				"{{EventId}}/Time 600 1200/GameStateQuery PLAYER_HAS_SEEN_EVENT Host 65, PLAYER_FARMHOUSE_UPGRADE Current 3, {{FarmCaveAllowedGameStateQueryId}}": "continue/64 15/farmer 64 16 2 Demetrius 64 18 0/speak Demetrius \"{{i18n:event.propagator.recipe.demetrius.1}}\"/addCraftingRecipe {{PropagatorId}}/pause 1750/message \"{{i18n:event.propagator.recipe.demetrius.2}}\"/pause 800/speak Demetrius \"{{i18n:event.propagator.recipe.demetrius.3}}\"/end dialogue Demetrius \"{{i18n:event.propagator.recipe.demetrius.4}}\""
+			}
+		},
+		// Recipes
+		{
+			"Action": "EditData",
+			"Target": "Data/CraftingRecipes",
+			"Entries": {
+				"{{PropagatorId}}": "388 20 709 1/secret/{{PropagatorQualifiedId}}/true/null"
+			}
+		},
+		// Dialogue
+		{
+			"Action": "EditData",
+			"Target": "Characters/Dialogue/Robin",
+			"Entries": {
+				"eventSeen_{{EventId}}": "{{i18n:dialogue.propagator.recipe.robin}}"
+			}
+		},
+		// Sprites
+		{
+			"Action": "Load",
+			"Target": "{{Assets}}/Machine",
+			"FromFile": "assets/machine.png"
+		},
+		{
+			"Action": "Load",
+			"Target": "{{Assets}}/Overlay",
+			"FromFile": "assets/overlay.png"
+		},
+		// Translations
+		{
+			"Action": "Load",
+			"Target": "{{Assets}}/Translations",
+			"FromFile": "{{FirstValidFile: i18n/{{language}}.json, i18n/default.json }}"
+		}
+	]
+}

@@ -10,4 +10,12 @@
 	<ItemGroup>
 		<PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.4.0" />
 	</ItemGroup>
+
+  <ItemGroup>
+    <ContentPacks Include="../BlueberryMushroomMachine [CP]" Version="$(Version)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="../BlueberryMushroomMachine [CP]/**" Link="_BlueberryMushroomMachine [CP]\%(RecursiveDir)\%(FileName)%(Extension)" CopyToOutputDirectory="Never" />
+  </ItemGroup>
 </Project>
