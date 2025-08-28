@@ -5,10 +5,10 @@ using StardewValley.Locations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static BlueberryMushroomMachine.ModEntry;
+using static MushroomPropagator.ModEntry;
 using Object = StardewValley.Object;
 
-namespace BlueberryMushroomMachine
+namespace MushroomPropagator
 {
 	public static class Utils
 	{

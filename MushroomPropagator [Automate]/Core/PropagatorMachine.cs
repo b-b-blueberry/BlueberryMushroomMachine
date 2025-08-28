@@ -2,12 +2,12 @@
 using Pathoschild.Stardew.Automate;
 using StardewValley;
 
-namespace BlueberryMushroomAutomation
+namespace MushroomPropagator_Automate
 {
 	public class PropagatorMachine : IMachine
 	{
-		private readonly BlueberryMushroomMachine.Propagator Entity;
-		public string MachineTypeID { get; } = BlueberryMushroomMachine.ModEntry.Data.PropagatorId;
+		private readonly MushroomPropagator.Propagator Entity;
+		public string MachineTypeID { get; } = MushroomPropagator.ModEntry.Data.PropagatorId;
 		public GameLocation Location { get; }
 		public Rectangle TileArea { get; }
 
@@ -15,7 +15,7 @@ namespace BlueberryMushroomAutomation
 		/// <param name="entity">The underlying entity.</param>
 		/// <param name="location">The location which contains the machine.</param>
 		/// <param name="tile">The tile covered by the machine.</param>
-		public PropagatorMachine(BlueberryMushroomMachine.Propagator entity, GameLocation location, in Vector2 tile)
+		public PropagatorMachine(MushroomPropagator.Propagator entity, GameLocation location, in Vector2 tile)
 		{
 			this.Entity = entity;
 			this.Location = location;

@@ -1,4 +1,4 @@
-using BlueberryMushroomMachine.Interface;
+using MushroomPropagator.Interface;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace BlueberryMushroomMachine
+namespace MushroomPropagator
 {
 	public sealed class ModEntry : Mod
 	{

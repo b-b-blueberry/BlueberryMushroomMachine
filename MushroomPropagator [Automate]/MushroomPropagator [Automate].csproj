@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>BlueberryMushroomAutomation</AssemblyName>
-    <RootNamespace>BlueberryMushroomAutomation</RootNamespace>
+    <AssemblyName>MushroomPropagator_Automate</AssemblyName>
+    <RootNamespace>MushroomPropagator_Automate</RootNamespace>
     <Version>2.3.0</Version>
 	  <TargetFramework>net6.0</TargetFramework>
-    <IgnoreModFilePatterns>BlueberryMushroomMachine.dll</IgnoreModFilePatterns>
+    <IgnoreModFilePatterns>MushroomPropagator.dll</IgnoreModFilePatterns>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BlueberryMushroomMachine\BlueberryMushroomMachine.csproj" />
+    <ProjectReference Include="..\MushroomPropagator\MushroomPropagator.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 ﻿using StardewModdingAPI;
 using StardewModdingAPI.Events;
 
-namespace BlueberryMushroomAutomation
+namespace MushroomPropagator_Automate
 {
 	public class ModEntry : Mod
 	{

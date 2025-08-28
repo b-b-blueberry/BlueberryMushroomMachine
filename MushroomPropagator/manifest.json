@@ -4,7 +4,7 @@
 	"Version": "2.3.0-alpha.1",
 	"Description": "Mushroom Propagator for the Farmhouse cellar and elsewhere.",
 	"UniqueID": "blueberry.MushroomPropagator",
-	"EntryDll": "BlueberryMushroomMachine.dll",
+	"EntryDll": "MushroomPropagator.dll",
 	"MinimumApiVersion": "4.0.0",
 	"Dependencies": [
 		{

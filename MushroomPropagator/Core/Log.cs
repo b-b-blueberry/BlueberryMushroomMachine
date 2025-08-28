@@ -1,4 +1,4 @@
-﻿namespace BlueberryMushroomMachine
+﻿namespace MushroomPropagator
 {
 	internal class Log
 	{

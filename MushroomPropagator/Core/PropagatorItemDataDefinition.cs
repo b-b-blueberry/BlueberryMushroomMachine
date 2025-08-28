@@ -4,7 +4,7 @@ using StardewValley;
 using StardewValley.ItemTypeDefinitions;
 using System.Collections.Generic;
 
-namespace BlueberryMushroomMachine
+namespace MushroomPropagator
 {
 	public class PropagatorItemDataDefinition : BaseItemDataDefinition
 	{

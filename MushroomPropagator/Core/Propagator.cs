@@ -5,9 +5,9 @@ using System;
 using System.Xml.Serialization;
 using Object = StardewValley.Object;
 
-namespace BlueberryMushroomMachine
+namespace MushroomPropagator
 {
-	[XmlType("Mods_BlueberryMushroomMachine")]
+	[XmlType("Mods_MushroomPropagator")]
 	public class Propagator : Object
 	{
 		/// <summary>

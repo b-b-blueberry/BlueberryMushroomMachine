@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace BlueberryMushroomMachine
+namespace MushroomPropagator
 {
 	public class ModValues
 	{

@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>MushroomPropagator</AssemblyName>
+		<RootNamespace>MushroomPropagator</RootNamespace>
+		<Version>2.3.0</Version>
+		<TargetFramework>net6.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.4.0" />
+	</ItemGroup>
+
+  <ItemGroup>
+    <ContentPacks Include="../MushroomPropagator [CP]" Version="$(Version)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="../MushroomPropagator [CP]/**" Link="_MushroomPropagator [CP]\%(RecursiveDir)\%(FileName)%(Extension)" CopyToOutputDirectory="Never" />
+  </ItemGroup>
+</Project>
