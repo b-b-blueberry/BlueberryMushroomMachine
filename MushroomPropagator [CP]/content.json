@@ -120,7 +120,8 @@
 				// At: Farm, morning
 				// For: Any player with a fully upgraded house and the appropriate farm cave type
 				// Host player must have seen FarmCave event, regardless of farm cave type
-				"{{EventId}}/Time 600 1200/GameStateQuery PLAYER_HAS_SEEN_EVENT Host 65, PLAYER_FARMHOUSE_UPGRADE Current 3, {{FarmCaveAllowedGameStateQueryId}}": "continue/64 15/farmer 64 16 2 Demetrius 64 18 0/speak Demetrius \"{{i18n:event.propagator.recipe.demetrius.1}}\"/addCraftingRecipe {{PropagatorId}}/pause 1750/message \"{{i18n:event.propagator.recipe.demetrius.2}}\"/pause 800/speak Demetrius \"{{i18n:event.propagator.recipe.demetrius.3}}\"/end dialogue Demetrius \"{{i18n:event.propagator.recipe.demetrius.4}}\""
+				// Ignore event if player already has the recipe, presumably through cheats
+				"{{EventId}}/Time 600 1200/GameStateQuery PLAYER_HAS_SEEN_EVENT Host 65, PLAYER_FARMHOUSE_UPGRADE Current 3, !PLAYER_HAS_CRAFTING_RECIPE Current {{PropagatorId}}, {{FarmCaveAllowedGameStateQueryId}}": "continue/64 15/farmer 64 16 2 Demetrius 64 18 0/speak Demetrius \"{{i18n:event.propagator.recipe.demetrius.1}}\"/addCraftingRecipe {{PropagatorId}}/pause 1750/message \"{{i18n:event.propagator.recipe.demetrius.2}}\"/pause 800/speak Demetrius \"{{i18n:event.propagator.recipe.demetrius.3}}\"/end dialogue Demetrius \"{{i18n:event.propagator.recipe.demetrius.4}}\""
 			}
 		},
 		// Recipes
