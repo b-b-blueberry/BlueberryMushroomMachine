@@ -125,7 +125,7 @@ namespace MushroomPropagator
 					var entries = new (string i18n, string propertyName, Type type)[] {
 						("working_rules", null, null),
 
-						("disabled_for_fruit_cave", nameof(ModEntry.Config.MushroomCaveOnly), typeof(bool)),
+						("mushroom_cave_only", nameof(ModEntry.Config.MushroomCaveOnly), typeof(bool)),
 						("recipe_always_available", nameof(ModEntry.Config.RecipeAlwaysAvailable), typeof(bool)),
 						("maximum_days_to_mature", nameof(ModEntry.Config.MaximumDaysToMature), typeof(int)),
 						("maximum_quantity_limits_doubled", nameof(ModEntry.Config.MaximumQuantityLimitsDoubled), typeof(bool)),

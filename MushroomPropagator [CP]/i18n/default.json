@@ -15,7 +15,7 @@
     "config.title.working_rules": "How it works",
     "config.title.working_areas": "Where it works",
 
-    "config.name.disabled_for_fruit_cave": "Disabled for fruit cave",
+    "config.name.mushroom_cave_only": "Mushroom cave only",
     "config.name.recipe_always_available": "Recipe always available",
     "config.name.maximum_days_to_mature": "Max. days to mature",
     "config.name.maximum_quantity_limits_doubled": "Max. quantity doubled",
@@ -29,7 +29,7 @@
     "config.name.works_in_greenhouse": "Greenhouse",
     "config.name.works_outdoors": "Outdoors",
 
-    "config.description.disabled_for_fruit_cave": "Whether the recipe is unlocked only upon choosing the mushroom cave.",
+    "config.description.mushroom_cave_only": "Whether the recipe is unlocked only upon choosing the mushroom cave.",
     "config.description.recipe_always_available": "Whether the recipe is available to use by default. Recipe will be given at the start of the next day, and if disabled will be removed until you meet the requirements.",
     "config.description.maximum_days_to_mature": "Maximum number of days for a mushroom to propagate. Smaller mushrooms will grow more frequently, but still as a proportion of this value.",
     "config.description.maximum_quantity_limits_doubled": "Whether to double the maximum number of mushrooms that can be held by a propagator. Larger mushrooms have lower limits, but still as a proportion of this value.",
