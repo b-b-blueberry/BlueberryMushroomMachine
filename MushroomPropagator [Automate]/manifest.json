@@ -1,7 +1,7 @@
 ﻿{
     "Name": "Mushroom Propagator [Automate]",
     "Author": "blueberry",
-    "Version": "2.3.0-alpha.1",
+    "Version": "2.3.0",
     "Description": "Mushroom Propagator compatibility with Automate.",
     "UniqueID": "blueberry.MushroomPropagator.Automate",
     "EntryDll": "MushroomPropagator_Automate.dll",
