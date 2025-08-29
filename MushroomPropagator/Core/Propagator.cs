@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using System;
+using System.Collections.Generic;
 using System.Xml.Serialization;
 using Object = StardewValley.Object;
 
@@ -499,87 +500,103 @@ namespace MushroomPropagator
 
 		public override void draw(SpriteBatch b, int x, int y, float alpha = 1f)
 		{
-			Point scaleSizeToPulse(Point size, Vector2 pulse) => (size.ToVector2() * Game1.pixelZoom + new Vector2(x: pulse.X, y: pulse.Y / 2)).ToPoint();
-			
-			Point shake = this.shakeTimer < 1
-				? Point.Zero
-				: new Point(x: Game1.random.Next(-1, 2), Game1.random.Next(-1, 2));
-			Vector2 pulse = ModEntry.Config.PulseWhenGrowing
-				? this.getScale() * Game1.pixelZoom
-				: Vector2.One;
-			Vector2 position = Game1.GlobalToLocal(
-				viewport: Game1.viewport,
-				globalPosition: new Vector2(x: x, y: y - 1) * Game1.tileSize);
-			Rectangle destination = new(
-				location: (position - pulse / 2).ToPoint() + shake,
-				size: scaleSizeToPulse(size: ModEntry.Data.MachineSpriteSize, pulse: pulse));
-			Rectangle source = Utils.GetMachineSourceRect(
-				location: Game1.currentLocation,
-				tile: this.TileLocation);
-			float layerDepth = Math.Max(0.0f, ((y + 1) * Game1.tileSize - 24) / 10000f)
-				+ (Game1.currentLocation.IsOutdoors ? 0f : x * 1f / 10000f);
-			bool isFlipped = Utils.GetMachineIsFlipped(tile: this.TileLocation);
+			string itemId = this.SourceMushroomItemId;
+			GameLocation location = Game1.currentLocation;
+			Vector2 tile = this.TileLocation;
+            bool isFlipped = Utils.GetMachineIsFlipped(tile);
+            float layerDepth = Math.Max(0, ((y + 1) * Game1.tileSize - 24) / 10000f)
+                + (location.IsOutdoors ? 0f : x * 1 / 10000f);
 
-			// Draw the base sprite
-			Propagator.DrawMachine(
-				spriteBatch: b,
-				destination: destination,
-				origin: Vector2.Zero,
-				color: Color.White,
-				alpha: alpha,
-				layerDepth: layerDepth,
-				source: source,
-				isFlipped: isFlipped);
+            // Local pixel value for Propagator draw position
+            Vector2 position = Game1.GlobalToLocal(Game1.viewport, new Vector2(x, y - 1) * Game1.tileSize);
+			// Local pixel value for added shake effects from some interactions
+            Vector2 shake = this.shakeTimer > 0
+				? new Vector2(Game1.random.Next(-1, 2), Game1.random.Next(-1, 2))
+                : Vector2.Zero;
+			// Base scale value used for expected/default machine size without added growth scale applied
+            Vector2 baseScale = new(Game1.pixelZoom);
+			// Growth scale value used for machine working animation when mushrooms are growing
+			Vector2 growScale = baseScale;
+			if (ModEntry.Config.PulseWhenGrowing)
+			{
+				growScale = this.getScale();
+				growScale.Y /= 2;
+            }
+			// Final scale value used for drawing the sprite, not for positioning
+            Vector2 displayScale = baseScale + growScale / baseScale / 2;
+			// Area of machine sprite in source texture
+            Rectangle machineSource = Utils.GetMachineSourceRect(location, tile);
+			// Pixel value of origin point of sprite in source area
+            Vector2 machineOrigin = machineSource.Size.ToVector2() / 2;
 
-			// End here if no source mushroom is set
-			if (this.SourceMushroomItemId is null)
+			position += shake * baseScale // apply shake
+				+ machineOrigin * baseScale // centre draw position
+                - new Vector2(0, machineSource.Height * displayScale.Y) / 2 // ensure growth scale animation is anchored to bottom of sprite
+                + new Vector2(0, Object.spriteSheetTileSize) * baseScale; // (i.e. sprite scales upwards and outwards, but not downwards)
+
+            // Draw Propagator machine sprite
+            Propagator.DrawMachine(
+                spriteBatch: b,
+                position: position,
+                origin: machineOrigin,
+                color: Color.White,
+                alpha: alpha,
+                scale: displayScale,
+                layerDepth: layerDepth,
+                source: machineSource,
+                isFlipped: isFlipped);
+
+            // Don't draw overlay sprite without a held mushroom
+            if (itemId is null)
 			{
 				return;
 			}
 
-			// Draw the held object overlay
-			bool isBasicMushroom = ModEntry.Data.Mushrooms.ContainsKey(this.SourceMushroomItemId);
-			int whichFrame = Utils.GetOverlaySpriteFrame(
-				currentDays: this.Growth,
-				goalDays: Propagator.DefaultDaysToGrow,
-				currentStack: this.heldObject.Value?.Stack ?? 0,
-				goalStack: this.MaximumStack);
-			int frames = ModEntry.Data.OverlaySpriteFrames;
+			var data = ModEntry.Data.Mushrooms.GetValueOrDefault(itemId);
+            var itemData = ItemRegistry.GetDataOrErrorItem(itemId);
 
-			if (isBasicMushroom)
-			{
-				// Centre mushroom overlay on base sprite
-				destination.Offset(amount: (source.Size.ToVector2() - ModEntry.Data.OverlaySpriteSize.ToVector2()) * Game1.pixelZoom / 2);
-				destination.Size = scaleSizeToPulse(size: ModEntry.Data.OverlaySpriteSize, pulse: pulse);
-				source = Utils.GetOverlaySpriteSourceRect(
-					location: Game1.currentLocation,
-					itemId: this.SourceMushroomItemId,
-					whichFrame: whichFrame);
-			}
+			// Quantity of held mushroom
+			int stack = this.heldObject.Value?.Stack ?? 0;
+			// Index of animation frame based on mushroom growth progress
+            int frame = Utils.GetOverlaySpriteFrame(data, this.Growth, Propagator.DefaultDaysToGrow, stack, this.MaximumStack);
+			// Texture used to draw overlay sprite
+            Texture2D overlayTexture;
+            // Area of overlay sprite in source texture
+            Rectangle overlaySource;
+            // Pixel value of origin point of sprite in source area
+            Vector2 overlayOrigin;
+			// Multiplier on display scale
+			float displayScaleModifier = 1f;
+
+            if (data.OverlayTextureName is not null && ModEntry.OverlayTextures.TryGetValue(data.OverlayTextureName, out overlayTexture))
+            {
+				// Use overlay sprite values for mushrooms with an overlay texture set
+                overlaySource = Utils.GetOverlaySpriteSourceRect(data, itemId, frame, location);
+                overlayOrigin = overlaySource.Size.ToVector2() / 2;
+            }
 			else
-			{
-				// Scale custom mushroom object sprite to growth ratio
-				float growthRatio = whichFrame / frames;
-				float growthScale = Math.Min(0.8f, growthRatio) + 0.2f;
-				destination = new Rectangle(
-					x: (int)(position.X - pulse.X / 2f) + shake.X + (int)(32 * (1 - growthScale))
-						+ (int)(pulse.X * growthScale / 4),
-					y: (int)(position.Y - pulse.Y / 2f) + shake.Y + 48 + (int)(32 * (1 - growthScale))
-						+ (int)(pulse.Y * growthScale / 8),
-					width: (int)((Game1.tileSize + pulse.X) * growthScale),
-					height: (int)((Game1.tileSize + pulse.Y / 2f) * growthScale));
-			}
+            {
+				// Use default item values for boring mushrooms without a custom overlay
+                overlayTexture = itemData.GetTexture();
+                overlaySource = itemData.GetSourceRect();
+			    overlayOrigin = overlaySource.Size.ToVector2() / 2;
 
-			b.Draw(
-				texture: isBasicMushroom ? ModEntry.OverlayTexture : Game1.objectSpriteSheet,
-				destinationRectangle: destination,
-				sourceRectangle: source,
-				color: Color.White,
-				rotation: 0f,
-				origin: Vector2.Zero,
-				effects: isFlipped ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
-				layerDepth: Math.Max(0.0f, ((y + 1) * Game1.tileSize - 24) / 10000f)
-					+ (Game1.currentLocation.IsOutdoors ? 0f : x * 1f / 10000f) + 1f / 10000f + 1f / 10000f);
+                // Scale object sprite to growth ratio
+				displayScaleModifier = 0.25f + Math.Min(0.75f, frame / data.OverlaySpriteFrames);
+				position += new Vector2(0, Object.spriteSheetTileSize / 2) * Game1.pixelZoom / 2;
+            }
+
+            // Draw mushroom overlay sprite
+            b.Draw(
+                texture: overlayTexture,
+                position: position,
+                sourceRectangle: overlaySource,
+                color: Color.White,
+                rotation: 0,
+                origin: overlayOrigin,
+                effects: isFlipped ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
+                scale: displayScale * displayScaleModifier,
+				layerDepth: layerDepth + 2 / 10000f);
 		}
 
 		// Other draw method overrides added only to use custom machine texture in place of objects/craftables texture for base sprite:
@@ -591,22 +608,19 @@ namespace MushroomPropagator
 				return;
 			}
 
-			Vector2 scaleFactor = this.getScale() * Game1.pixelZoom;
-			Vector2 position = Game1.GlobalToLocal(
+            Vector2 scale = new Vector2(Game1.pixelZoom);
+            Vector2 position = Game1.GlobalToLocal(
 				viewport: Game1.viewport,
 				globalPosition: new Vector2(xNonTile, yNonTile));
-			Rectangle destination = new(
-				x: (int)(position.X - (scaleFactor.X / 2f)) + ((this.shakeTimer > 0) ? Game1.random.Next(-1, 2) : 0),
-				y: (int)(position.Y - (scaleFactor.Y / 2f)) + ((this.shakeTimer > 0) ? Game1.random.Next(-1, 2) : 0),
-				width: (int)(Game1.tileSize + scaleFactor.X),
-				height: (int)(Game1.tileSize * 2 + (scaleFactor.Y / 2f)));
+			Vector2 shake = this.shakeTimer <= 0 ? Vector2.Zero : new Vector2(Game1.random.Next(-1, 2), Game1.random.Next(-1, 2));
 			Propagator.DrawMachine(
 				spriteBatch: spriteBatch,
-				destination: destination,
-				origin: Vector2.Zero,
+                position: position + shake,
+                origin: Vector2.Zero,
 				color: Color.White,
 				alpha: alpha,
-				layerDepth: layerDepth,
+                scale: scale,
+                layerDepth: layerDepth,
 				source: Utils.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation),
 				isFlipped: Utils.GetMachineIsFlipped(tile: this.TileLocation));
 		}
@@ -618,22 +632,18 @@ namespace MushroomPropagator
 				return;
 			}
 
-			Vector2 scale = this.getScale() * Game1.pixelZoom;
+			Vector2 scale = new Vector2(Game1.pixelZoom);
 			Vector2 position = Game1.GlobalToLocal(
 				viewport: Game1.viewport,
 				globalPosition: (this.TileLocation + new Vector2(x: 0, y: -1)) * Game1.tileSize);
-			Rectangle destination = new(
-				x: (int)(position.X - (scale.X / 2f)),
-				y: (int)(position.Y - (scale.Y / 2f)),
-				width: (int)(Game1.tileSize + scale.X),
-				height: (int)(Game1.tileSize * 2 + (scale.Y / 2f)));
 			float layerDepth = Math.Clamp(value: ((this.TileLocation.Y + 1) * Game1.tileSize - 1) / 10000f, min: 0, max: 1);
 			Propagator.DrawMachine(
 				spriteBatch: b,
-				destination: destination,
+				position: position,
 				origin: Vector2.Zero,
 				color: Color.White,
-				alpha: 1f,
+				alpha: 1,
+				scale: scale,
 				layerDepth: layerDepth,
 				source: Utils.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation),
 				isFlipped: Utils.GetMachineIsFlipped(tile: this.TileLocation));
@@ -647,10 +657,11 @@ namespace MushroomPropagator
 			float layerDepth = Math.Max(0f, (f.StandingPixel.Y + 3f) / 10000f);
 			Propagator.DrawMachine(
 				spriteBatch: spriteBatch,
-				destination: destination,
+                position: objectPosition,
 				origin: Vector2.Zero,
 				color: Color.White,
-				alpha: 1f,
+				alpha: 1,
+				scale: new Vector2(Game1.pixelZoom),
 				layerDepth: layerDepth,
 				source: Utils.GetMachineSourceRect(location: Game1.currentLocation, tile: Vector2.Zero));
 		}
@@ -658,7 +669,7 @@ namespace MushroomPropagator
 		public override void drawInMenu(SpriteBatch spriteBatch, Vector2 location, float scaleSize, float transparency, float layerDepth, StackDrawType drawStackNumber, Color color, bool drawShadow)
 		{
 			const float tinyScale = 3f;
-			bool shouldDrawStackNumber = ((drawStackNumber == StackDrawType.Draw && this.maximumStackSize() > 1 && this.Stack > 1)
+			bool shouldDrawStackNumber = ((drawStackNumber is StackDrawType.Draw && this.maximumStackSize() > 1 && this.Stack > 1)
 					|| drawStackNumber == StackDrawType.Draw_OneInclusive)
 				&& scaleSize > 0.3f
 				&& this.Stack != int.MaxValue;
@@ -669,17 +680,15 @@ namespace MushroomPropagator
 				scaleSize *= 0.75f;
 			}
 
-			float scale = Game1.pixelZoom * (((double)scaleSize < 0.2) ? scaleSize : (scaleSize / 2f));
+			float scale = Game1.pixelZoom * ((scaleSize < 0.2f) ? scaleSize : (scaleSize / 2));
 			Vector2 position = location + new Vector2(value: 1) * Game1.tileSize / 2;
-			Rectangle destination = new(
-				location: position.ToPoint(),
-				size: (ModEntry.Data.MachineSpriteSize.ToVector2() * scale).ToPoint());
 			Propagator.DrawMachine(
 				spriteBatch: spriteBatch,
-				destination: destination,
+				position: position,
 				origin: ModEntry.Data.MachineSpriteSize.ToVector2() / 2,
 				color: color,
 				alpha: transparency,
+				scale: new Vector2(scale),
 				layerDepth: layerDepth,
 				source: Game1.uiMode ? null : Utils.GetMachineSourceRect(location: Game1.currentLocation, tile: this.TileLocation));
 
@@ -690,15 +699,15 @@ namespace MushroomPropagator
 					b: spriteBatch,
 					position: location + new Vector2(
 						x: Game1.tileSize - Utility.getWidthOfTinyDigitString(this.Stack, tinyScale * scaleSize) + (tinyScale * scaleSize),
-						y: Game1.tileSize - (18f * scaleSize) + 2f),
+						y: Game1.tileSize - (18 * scaleSize) + 2),
 					scale: tinyScale * scaleSize,
-					layerDepth: 1f,
+					layerDepth: 1,
 					c: color);
 			}
 
 			if (this.IsRecipe)
 			{
-				const int size = Game1.smallestTileSize;
+				const int size = Object.spriteSheetTileSize;
 				spriteBatch.Draw(
 					texture: Game1.objectSpriteSheet,
 					position: location + new Vector2(value: size),
@@ -708,7 +717,7 @@ namespace MushroomPropagator
 						width: size,
 						height: size),
 					color: color,
-					rotation: 0f,
+					rotation: 0,
 					origin: Vector2.Zero,
 					scale: tinyScale,
 					effects: SpriteEffects.None,
@@ -738,15 +747,16 @@ namespace MushroomPropagator
 			}
 		}
 
-		protected static void DrawMachine(SpriteBatch spriteBatch, Rectangle destination, Vector2 origin, Color color, float alpha, float layerDepth, Rectangle? source = null, bool isFlipped = false)
+		protected static void DrawMachine(SpriteBatch spriteBatch, Vector2 position, Vector2 origin, Vector2 scale, Color color, float alpha, float layerDepth, Rectangle? source = null, bool isFlipped = false)
 		{
 			spriteBatch.Draw(
 				texture: ModEntry.MachineTexture,
-				destinationRectangle: destination,
+				position: position,
 				sourceRectangle: source ?? new Rectangle(location: Point.Zero, size: ModEntry.Data.MachineSpriteSize),
 				color: Color.White * alpha,
 				rotation: 0f,
 				origin: origin,
+				scale: scale,
 				effects: isFlipped ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
 				layerDepth: layerDepth);
 		}

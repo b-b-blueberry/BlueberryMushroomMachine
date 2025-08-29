@@ -9,8 +9,6 @@ namespace MushroomPropagator
 			= Path.Combine("Mods", "blueberry.MushroomPropagator", "Assets", "Data");
 		public static readonly string GameContentMachineSpritePath
 			= Path.Combine("Mods", "blueberry.MushroomPropagator", "Assets", "Machine");
-		public static readonly string GameContentOverlaySpritePath
-			= Path.Combine("Mods", "blueberry.MushroomPropagator", "Assets", "Overlay");
         public static readonly string GameContentTranslationsPath
             = Path.Combine("Mods", "blueberry.MushroomPropagator", "Assets", "Translations");
 

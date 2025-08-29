@@ -1,12 +1,14 @@
-using MushroomPropagator.Interface;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MushroomPropagator.Interface;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using Object = StardewValley.Object;
 
 namespace MushroomPropagator
 {
@@ -21,10 +23,6 @@ namespace MushroomPropagator
 			public string PropagatorTypeDefinitionId;
             /// <summary>Dimensions of machine sprite in source texture.</summary>
             public Point MachineSpriteSize;
-            /// <summary>Dimensions of overlay sprite in source texture.</summary>
-            public Point OverlaySpriteSize;
-			/// <summary>Number of mushroom growth stage sprites in overlay texture.</summary>
-            public int OverlaySpriteFrames;
 
             // Mushrooms
             /// <summary>Map of Propagator input item IDs to their respective data.</summary>
@@ -47,22 +45,31 @@ namespace MushroomPropagator
 
 		public class MushroomData
 		{
-			public int OverlaySpriteIndex = -1;
-			public float GrowthRate;
-			public int MaximumQuantity;
+			/// <summary>Asset name of overlay texture relative to game <c>Content</c> folder.</summary>
+			public string OverlayTextureName = null;
+			/// <summary>Index of sprite in source texture relative to sprite size.</summary>
+			public int OverlaySpriteIndex = 0;
+            /// <summary>Number of mushroom growth stage sprites in overlay texture.</summary>
+			public int OverlaySpriteFrames = 4;
+            /// <summary>Dimensions of overlay sprite in source texture.</summary>
+            public Point OverlaySpriteSize = new(Object.spriteSheetTileSize);
+            /// <summary>Multiplier applied to standard rate of increase on mushroom stack size per day.</summary>
+            public float GrowthRate = 1;
+			/// <summary>Maximum stack size of mushroom in machine before daily stack size increases are stopped.</summary>
+			public int MaximumQuantity = 4;
 		}
 
 		public static ModEntry Instance { get; private set; }
 		public static Config Config { get; private set; }
 		public static Texture2D MachineTexture { get; private set; }
-		public static Texture2D OverlayTexture { get; private set; }
+		public static Dictionary<string, Texture2D> OverlayTextures { get; private set; }
 		public static ModData Data { get; private set; }
 
 		private static Dictionary<string, string> Translations { get; set; }
 
         public static bool DebugMode { get; private set; } = true;
 
-		public override void Entry(IModHelper helper)
+        public override void Entry(IModHelper helper)
 		{
 			ModEntry.Instance = this;
 			ModEntry.Config = helper.ReadConfig<Config>();
@@ -249,7 +256,7 @@ namespace MushroomPropagator
 
             ModEntry.Data = Game1.content.Load<ModData>(ModValues.GameContentDataPath);
 			ModEntry.MachineTexture = Game1.content.Load<Texture2D>(ModValues.GameContentMachineSpritePath);
-			ModEntry.OverlayTexture = Game1.content.Load<Texture2D>(ModValues.GameContentOverlaySpritePath);
+			ModEntry.OverlayTextures = [];
 			ModEntry.Translations = Game1.content.Load<Dictionary<string, string>>(ModValues.GameContentTranslationsPath);
 
             if (!this.TryLoadApis())
@@ -269,7 +276,11 @@ namespace MushroomPropagator
 
         private void OnDayStarted(object sender, DayStartedEventArgs e)
 		{
+			// Update mod data
 			this.Helper.GameContent.InvalidateCache(ModValues.GameContentDataPath);
+
+			// Update overlay textures
+			this.PopulateOverlayTextures();
 
 			// Update player recipes
 			if (ModEntry.Config.RecipeAlwaysAvailable
@@ -340,5 +351,22 @@ namespace MushroomPropagator
 					});
 			}
 		}
-	}
+
+        private void PopulateOverlayTextures()
+        {
+            // Create or invalidate textures by asset name for each distinct entry in Mushrooms data model
+            var names = ModEntry.Data.Mushrooms.Values.Select(data => data.OverlayTextureName).Distinct().Where(name => name is not null);
+            foreach (var name in names)
+            {
+                if (ModEntry.OverlayTextures.ContainsKey(name))
+                {
+                    this.Helper.GameContent.InvalidateCache(name);
+                }
+                else
+                {
+                    ModEntry.OverlayTextures.Add(name, Game1.content.Load<Texture2D>(name));
+                }
+            }
+        }
+    }
 }

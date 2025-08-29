@@ -30,9 +30,9 @@ namespace MushroomPropagator
 		/// <param name="currentStack">Current count of mushrooms.</param>
 		/// <param name="goalStack">Maximum amount of mushrooms of this type.</param>
 		/// <returns>Frame for mushroom growth progress.</returns>
-		public static int GetOverlaySpriteFrame(float currentDays, int goalDays, int currentStack, int goalStack)
+		public static int GetOverlaySpriteFrame(MushroomData data, float currentDays, int goalDays, int currentStack, int goalStack)
 		{
-			int frames = ModEntry.Data.OverlaySpriteFrames - 1;
+			int frames = data.OverlaySpriteFrames - 1;
 			float maths = currentStack == goalStack ? frames : frames
 				* (currentStack - 1 + (currentDays / goalDays))
 				* goalDays / (goalStack * goalDays);
@@ -45,20 +45,15 @@ namespace MushroomPropagator
 		/// Undefined mushrooms will use their default object appearance.
 		/// </summary>
 		/// <returns>Source rectangle for mushroom overlay from overlay texture.</returns>
-		public static Rectangle GetOverlaySpriteSourceRect(GameLocation location, string itemId, int whichFrame)
+		public static Rectangle GetOverlaySpriteSourceRect(MushroomData data, string itemId, int frame, GameLocation location)
 		{
-			int frames = ModEntry.Data.OverlaySpriteFrames;
-			bool hasOverlaySprite = ModEntry.Data.Mushrooms.TryGetValue(itemId, out var data) && data.OverlaySpriteIndex >= 0;
-			Point size = hasOverlaySprite
-				? ModEntry.Data.OverlaySpriteSize
-				: new Point(x: Game1.smallestTileSize, y: Game1.smallestTileSize);
-			return hasOverlaySprite
-				? new Rectangle(
-					x: (Utils.IsDarkLocation(location) ? size.X * frames : 0) + whichFrame * size.X,
-					y: GetMushroomOverlaySpriteIndex(itemId: itemId) * size.Y,
-					width: size.X,
-					height: size.Y)
-				: ItemRegistry.GetDataOrErrorItem(itemId).GetSourceRect();
+            int frames = data.OverlaySpriteFrames;
+            Point size = data.OverlaySpriteSize;
+			return new Rectangle(
+				x: (Utils.IsDarkLocation(location) ? size.X * frames : 0) + frame * size.X,
+				y: GetMushroomOverlaySpriteIndex(itemId: itemId) * size.Y,
+				width: size.X,
+				height: size.Y);
 		}
 
 		/// <summary>

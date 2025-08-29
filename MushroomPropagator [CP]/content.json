@@ -55,38 +55,75 @@
 					"X": 16,
 					"Y": 32
 				},
-				"OverlaySpriteSize": {
-					"X": 24,
-					"Y": 32
-				},
-				"OverlaySpriteFrames": 4,
 
 				// Mushrooms
+
+				// Overlay texture will be cached and created or invalidated
+				// in sync with this data asset.
+
+				// If OverlayTextureName is omitted,
+				// the item sprite will be drawn instead,
+				// and all OverlaySprite values will be ignored.
+
+				// OverlaySpriteIndex defaults to index 0.
+				// OverlaySpriteFrames defaults to 4 frames.
+				// OverlaySpriteSize defaults to 16x16 pixels.
+
 				"Mushrooms": {
 					"257": { // Morel
 						"MaximumQuantity": 4,
 						"GrowthRate": 0.5,
-						"OverlaySpriteIndex": 2
+						"OverlayTextureName": "{{Assets}}/Overlay",
+						"OverlaySpriteIndex": 2,
+						"OverlaySpriteFrames": 4,
+						"OverlaySpriteSize": {
+							"X": 24,
+							"Y": 32
+						}
 					},
 					"281": { // Chanterelle
 						"MaximumQuantity": 4,
 						"GrowthRate": 0.5,
-						"OverlaySpriteIndex": 1
+						"OverlayTextureName": "{{Assets}}/Overlay",
+						"OverlaySpriteIndex": 1,
+						"OverlaySpriteFrames": 4,
+						"OverlaySpriteSize": {
+							"X": 24,
+							"Y": 32
+						}
 					},
 					"404": { // Common Mushroom
 						"MaximumQuantity": 6,
 						"GrowthRate": 1.0,
-						"OverlaySpriteIndex": 0
+						"OverlayTextureName": "{{Assets}}/Overlay",
+						"OverlaySpriteIndex": 0,
+						"OverlaySpriteFrames": 4,
+						"OverlaySpriteSize": {
+							"X": 24,
+							"Y": 32
+						}
 					},
 					"420": { // Red Mushroom
 						"MaximumQuantity": 3,
 						"GrowthRate": 0.5,
-						"OverlaySpriteIndex": 3
+						"OverlayTextureName": "{{Assets}}/Overlay",
+						"OverlaySpriteIndex": 3,
+						"OverlaySpriteFrames": 4,
+						"OverlaySpriteSize": {
+							"X": 24,
+							"Y": 32
+						}
 					},
 					"422": { // Purple Mushroom
 						"MaximumQuantity": 2,
 						"GrowthRate": 0.25,
-						"OverlaySpriteIndex": 4
+						"OverlayTextureName": "{{Assets}}/Overlay",
+						"OverlaySpriteIndex": 4,
+						"OverlaySpriteFrames": 4,
+						"OverlaySpriteSize": {
+							"X": 24,
+							"Y": 32
+						}
 					}
 				},
 				"MushroomGrowthRatePerPrice": {
