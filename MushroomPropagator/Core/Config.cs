@@ -15,7 +15,5 @@
 		public bool WorksInFarmHouse { get; set; } = false;
 		public bool WorksInGreenhouse { get; set; } = false;
 		public bool WorksOutdoors { get; set; } = false;
-
-		public bool DebugMode { get; set; } = false;
 	}
 }

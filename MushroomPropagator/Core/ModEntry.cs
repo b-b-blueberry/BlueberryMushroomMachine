@@ -60,6 +60,8 @@ namespace MushroomPropagator
 
 		private static Dictionary<string, string> Translations { get; set; }
 
+        public static bool DebugMode { get; private set; } = true;
+
 		public override void Entry(IModHelper helper)
 		{
 			ModEntry.Instance = this;
@@ -159,7 +161,7 @@ namespace MushroomPropagator
 								if (current != value)
 								{
 									Log.D($"Config edit: {property.Name} - {current} => {value}",
-										ModEntry.Config.DebugMode);
+										ModEntry.DebugMode);
 									property.SetValue(ModEntry.Config, value);
 								}
 							}
@@ -190,7 +192,7 @@ namespace MushroomPropagator
 							else
 							{
 								Log.D($"Unsupported config entry type {type}",
-									ModEntry.Config.DebugMode);
+									ModEntry.DebugMode);
 							}
 						}
 					}
@@ -208,7 +210,7 @@ namespace MushroomPropagator
 		{
 			try
 			{
-				if (ModEntry.Config.DebugMode)
+				if (ModEntry.DebugMode)
 				{
 					Log.D("== CONFIG SUMMARY ==\n"
 						  + "\nWorks in locations:"
@@ -221,8 +223,8 @@ namespace MushroomPropagator
 						  + $"\nGrowth Pulse:   {ModEntry.Config.PulseWhenGrowing}"
 						  + $"\nOnly Tools Pop: {ModEntry.Config.OnlyToolsCanRemoveRootMushrooms}"
 						  + $"\nLanguage:       {LocalizedContentManager.CurrentLanguageCode.ToString().ToUpper()}"
-						  + $"\nDebugging:      {ModEntry.Config.DebugMode}",
-						ModEntry.Config.DebugMode);
+						  + $"\nDebugging:      {ModEntry.DebugMode}",
+						ModEntry.DebugMode);
 				}
 			}
 			catch (Exception ex)
@@ -302,7 +304,7 @@ namespace MushroomPropagator
 		{
 			// Commands usable when debugging
 
-			if (ModEntry.Config.DebugMode)
+			if (ModEntry.DebugMode)
 			{
 				this.Helper.ConsoleCommands.Add(
 					name: ModValues.GrowConsoleCommand,
@@ -315,7 +317,7 @@ namespace MushroomPropagator
 								$" Q{propagator.SourceMushroomQuality}" +
 								$" ({propagator.Growth}/{Propagator.DefaultDaysToGrow} days +{propagator.GrowthRatePerDay})" +
 								$" at {Game1.currentLocation.Name} {propagator.TileLocation}",
-								ModEntry.Config.DebugMode);
+								ModEntry.DebugMode);
 
 							propagator.GrowHeldObject();
 						}
@@ -333,7 +335,7 @@ namespace MushroomPropagator
 								$" Q{propagator.SourceMushroomQuality}" +
 								$" ({propagator.Growth}/{Propagator.DefaultDaysToGrow} days +{propagator.GrowthRatePerDay})" +
 								$" at {Game1.currentLocation.Name} {propagator.TileLocation}",
-								ModEntry.Config.DebugMode);
+								ModEntry.DebugMode);
 						}
 					});
 			}
