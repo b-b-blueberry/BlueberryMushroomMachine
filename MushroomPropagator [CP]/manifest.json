@@ -1,7 +1,7 @@
 ﻿{
 	"Name": "Mushroom Propagator [CP]",
 	"Author": "blueberry",
-	"Version": "2.3.0",
+	"Version": "2.3.1-alpha.0",
 	"Description": "Mushroom Propagator assets and content.",
 	"UniqueID": "blueberry.MushroomPropagator.CP",
 	"ContentPackFor": {
